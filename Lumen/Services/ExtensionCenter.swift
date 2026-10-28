@@ -6,26 +6,34 @@ import WebKit
 /// Extensions installed inside Safari or other apps are not visible to this process.
 enum ExtensionSupport {
     static var isAvailable: Bool {
+        #if compiler(>=6.1)
         if #available(macOS 15.4, *) { return true }
+        #endif
         return false
     }
 
     static func pickFolder() {
+        #if compiler(>=6.1)
         guard #available(macOS 15.4, *) else { return }
         ExtensionCenter.shared.pickAndLoad()
+        #endif
     }
 
     static func restoreSaved() {
+        #if compiler(>=6.1)
         guard #available(macOS 15.4, *) else { return }
         ExtensionCenter.shared.restoreSaved()
+        #endif
     }
 
     static func attach(_ configuration: WKWebViewConfiguration) {
+        #if compiler(>=6.1)
         guard #available(macOS 15.4, *) else { return }
         // A popup configuration already carries the opener's controller. Assigning another one is unnecessary.
         if configuration.webExtensionController == nil {
             configuration.webExtensionController = ExtensionCenter.shared.controller
         }
+        #endif
     }
 }
 
@@ -36,6 +44,9 @@ final class ExtensionMenuModel: ObservableObject {
     private init() {}
 }
 
+// These types first shipped in the Xcode 16.3 SDK. Runtime checks alone
+// cannot make older compilers resolve them.
+#if compiler(>=6.1)
 @available(macOS 15.4, *)
 final class ExtensionCenter: NSObject {
     static let shared = ExtensionCenter()
@@ -93,3 +104,5 @@ final class ExtensionCenter: NSObject {
         }
     }
 }
+
+#endif

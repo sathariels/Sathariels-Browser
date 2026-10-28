@@ -163,6 +163,7 @@ enum PageScripts {
     """
 
     static let fillLogin = """
+    if (location.href !== expectedURL || location.protocol !== 'https:') return false;
     const pass = document.querySelector('input[type="password"]');
     if (!pass) return false;
     const root = pass.form || document;

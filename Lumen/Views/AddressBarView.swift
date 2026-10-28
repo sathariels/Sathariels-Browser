@@ -41,10 +41,10 @@ struct AddressBarView: View {
                 navButton("sidebar.left", help: "Toggle sidebar", enabled: true) { session.grokVisible = false; session.sidebarVisible.toggle() }
                 omnibox
                 Menu {
-                    Button("Sign in to Google…") {
-                        session.newTab(url: URL(string: "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fwww.google.com%2Fai"))
+                    Button("Manage Google account…") { session.newTab(url: URL(string: "https://myaccount.google.com")) }
+                    Button("Switch or add Google account…") {
+                        session.newTab(url: URL(string: "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fwww.google.com%2Fai"))
                     }
-                    Button("Google account…") { session.newTab(url: URL(string: "https://myaccount.google.com")) }
                     Divider()
                     Button("Browser settings…") { openSettings() }
                 } label: {
@@ -65,15 +65,21 @@ struct AddressBarView: View {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.down")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(downloads.hasActive ? LumenTheme.sky : LumenTheme.activeText)
+                            .foregroundStyle(downloads.hasActive || session.downloadsVisible ? LumenTheme.accent : LumenTheme.activeText)
                         Rectangle()
-                            .fill(downloads.hasActive ? LumenTheme.sky : Color.clear)
+                            .fill(downloads.hasActive ? LumenTheme.accent : Color.clear)
                             .frame(width: 18 * (downloads.activeFraction ?? 0), height: 2)
                     }
                     .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
                 .help("Downloads")
+                .accessibilityLabel("Downloads")
+                .popover(isPresented: $session.downloadsVisible, arrowEdge: .bottom) {
+                    DownloadsPanel(onClose: { session.downloadsVisible = false })
+                        .frame(width: 380)
+                        .preferredColorScheme(.dark)
+                }
                 if updates.showsButton {
                     Button { updates.showSheet = true } label: {
                         Text("Update")

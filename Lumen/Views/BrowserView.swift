@@ -36,15 +36,8 @@ struct BrowserView: View {
                                 .frame(width: min(session.sidebarWidth, max(200, workspace.size.width * 0.24)))
                             dragHandle(width: true)
                         }
-                        ZStack(alignment: .topTrailing) {
-                            split
-                            if session.downloadsVisible {
-                                DownloadsPanel()
-                                    .frame(width: min(420, max(220, workspace.size.width * 0.48)), height: 240)
-                                    .padding(8)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        split
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     }
                     }
@@ -150,7 +143,7 @@ struct TabStrip: View {
     @State private var laidOutWidth: CGFloat = 190
 
     private let tabMax: CGFloat = 240
-    private let tabMin: CGFloat = 36
+    private let tabMin: CGFloat = 128
     private let gap: CGFloat = 6
 
     var body: some View {
@@ -158,12 +151,12 @@ struct TabStrip: View {
             GeometryReader { geo in
                 let pins = session.tabs.filter(\.pinned)
                 let loose = session.tabs.filter { !$0.pinned && !session.isCollapsed($0) }
-                let reserved = CGFloat(pins.count) * 40 + CGFloat(max(pins.count - 1, 0)) * gap + groupChrome + 36
+                let reserved = CGFloat(pins.count) * 40 + CGFloat(max(pins.count - 1, 0)) * gap + groupChrome
                 let available = max(0, geo.size.width - reserved - 8)
                 let natural = loose.isEmpty ? tabMax : min(tabMax, max(tabMin, (available - gap * CGFloat(max(loose.count - 1, 0))) / CGFloat(loose.count)))
                 let width = lockedWidth.map { min(natural, $0) } ?? natural
                 let needsScroll = !loose.isEmpty && CGFloat(loose.count) * tabMin + gap * CGFloat(loose.count - 1) > available
-                strip(pins: pins, loose: loose, tabWidth: needsScroll ? tabMin : width, scroll: needsScroll)
+                strip(pins: pins, loose: loose, tabWidth: needsScroll ? tabMin : width)
                     .onChange(of: loose.count) { old, new in
                         if new < old && stripHover {
                             lockedWidth = laidOutWidth
@@ -179,6 +172,15 @@ struct TabStrip: View {
                     .foregroundStyle(LumenTheme.coral)
                     .padding(.horizontal, 8)
             }
+            Button { session.newTab() } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(LumenTheme.accent)
+            .help("New tab")
+            .accessibilityLabel("New tab")
             extensionButton
         }
         .padding(.leading, leading)
@@ -201,7 +203,7 @@ struct TabStrip: View {
         }
     }
 
-    private func strip(pins: [BrowserTab], loose: [BrowserTab], tabWidth: CGFloat, scroll: Bool) -> some View {
+    private func strip(pins: [BrowserTab], loose: [BrowserTab], tabWidth: CGFloat) -> some View {
         let row = HStack(spacing: gap) {
             ForEach(pins) { tab in
                 TabChip(session: session, tab: tab, width: 40, compact: true)
@@ -219,25 +221,18 @@ struct TabStrip: View {
             ForEach(loose.filter { $0.groupID == nil }) { tab in
                 TabChip(session: session, tab: tab, width: tabWidth, compact: tabWidth < 72)
             }
-            Button {
-                session.newTab()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(LumenTheme.activeText)
-                    .frame(width: 28, height: 28)
-            }
-            .buttonStyle(.plain)
-            .help("New tab")
+
         }
         .padding(.leading, 4)
-        return Group {
-            if scroll {
-                ScrollView(.horizontal, showsIndicators: false) { row }
-            } else {
-                row
-            }
+        return ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) { row }
+                .onChange(of: session.focusedTab?.id) { _, id in
+                    guard let id else { return }
+                    // No animated reflow or view-tree swap when the strip overflows.
+                    proxy.scrollTo(id, anchor: .trailing)
+                }
         }
+        .transaction { $0.animation = nil }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
@@ -252,7 +247,7 @@ struct TabStrip: View {
                 }
                 Button("Load Folder…") { ExtensionSupport.pickFolder() }
             } else {
-                Text("Needs macOS 15.4")
+                Text("Extensions unavailable in this build or macOS version")
             }
         } label: {
             Image(systemName: "puzzlepiece.extension")
@@ -315,7 +310,8 @@ struct TabChip: View {
                 Spacer(minLength: 0)
             }
         }
-        .padding(.horizontal, tab.pinned ? 6 : 8)
+        .padding(.leading, tab.pinned ? 6 : 10)
+        .padding(.trailing, tab.pinned ? 6 : 28)
         .contentShape(Rectangle())
         .onTapGesture { session.select(tab.id) }
         .overlay(alignment: .trailing) {
@@ -327,7 +323,7 @@ struct TabChip: View {
                         .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(Color(red: 135 / 255, green: 145 / 255, blue: 139 / 255))
                         .frame(width: 16, height: 16)
-                        .background(active ? LumenTheme.toolbar : LumenTheme.bg)
+                        .background(active ? LumenTheme.accentFill : LumenTheme.tabIdle, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .padding(.trailing, 4)
@@ -335,8 +331,11 @@ struct TabChip: View {
             }
         }
         .frame(width: width, height: 32)
-        .background(active ? LumenTheme.toolbar : Color.clear)
+        .background(active ? LumenTheme.accentFill : (hover ? LumenTheme.toolbar : LumenTheme.tabIdle))
         .clipShape(RoundedRectangle(cornerRadius: 9))
+        .overlay(RoundedRectangle(cornerRadius: 9)
+            .strokeBorder(active ? LumenTheme.accent.opacity(0.75) : Color.white.opacity(hover ? 0.26 : 0.16), lineWidth: 1))
+        .id(tab.id)
         .overlay(alignment: .top) {
             Capsule().fill(active ? LumenTheme.accent : Color.clear).frame(width: min(32, width - 8), height: 2)
         }
@@ -757,96 +756,121 @@ struct FindBar: View {
         }
         .padding(6)
         .background(LumenTheme.bgRaised)
-        .onChange(of: session.findFocusToken) { _, _ in focused = true }
+        .onChange(of: session.findFocusToken, initial: true) { _, _ in
+            DispatchQueue.main.async { focused = true }
+        }
     }
 }
 
 struct DownloadsPanel: View {
     @ObservedObject private var downloads = DownloadController.shared
+    var onClose: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 20)).foregroundStyle(LumenTheme.accent)
+                Text("Downloads").font(.system(size: 15, weight: .semibold))
+                Spacer()
+                Button(action: onClose) { Image(systemName: "xmark").frame(width: 24, height: 24) }
+                    .buttonStyle(.plain).foregroundStyle(LumenTheme.textDim)
+                    .help("Close downloads").accessibilityLabel("Close downloads")
+            }
+            .padding(16)
+            Divider().overlay(LumenTheme.border)
+            if downloads.rows.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "tray.and.arrow.down")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(LumenTheme.accent)
+                        .frame(width: 64, height: 64)
+                        .background(LumenTheme.accentFill, in: RoundedRectangle(cornerRadius: 18))
+                    Text("Your downloads appear here")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Keep browsing while your files download.")
+                        .font(.system(size: 12)).foregroundStyle(LumenTheme.textDim)
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 30)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(downloads.rows) { row in downloadRow(row) }
+                    }.padding(12)
+                }
+                .frame(height: min(340, CGFloat(downloads.rows.count) * 116 + 24))
+            }
+            Divider().overlay(LumenTheme.border)
             HStack {
-                SectionLabel(title: "Downloads", color: LumenTheme.sky)
+                Button("Open Downloads") {
+                    if let folder = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first {
+                        NSWorkspace.shared.open(folder)
+                    }
+                }.buttonStyle(LumenButtonStyle(tint: LumenTheme.accent, accent: true))
                 Spacer()
                 Button("Clear finished") { downloads.clearFinished() }
-                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.textDim))
-                    .padding(.trailing, 8)
-            }
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
-                    if downloads.rows.isEmpty {
-                        Text("Nothing downloading. Files save to Downloads.")
-                            .font(LumenTheme.monoSmall)
-                            .foregroundStyle(LumenTheme.textDim)
-                            .padding(8)
-                    }
-                    ForEach(downloads.rows) { row in
-                        HStack(spacing: 8) {
-                            Rectangle()
-                                .fill(color(row.state))
-                                .frame(width: 8, height: 8)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(row.filename)
-                                    .font(LumenTheme.monoSmall)
-                                    .foregroundStyle(LumenTheme.text)
-                                    .lineLimit(1)
-                                if row.state == .active {
-                                    Rectangle()
-                                        .fill(LumenTheme.sky)
-                                        .frame(width: 120 * (row.fraction ?? 0.05), height: 3)
-                                    Text(progressText(row))
-                                        .font(LumenTheme.micro)
-                                        .foregroundStyle(LumenTheme.textDim)
-                                } else if let detail = row.detail {
-                                    Text(detail).font(LumenTheme.micro).foregroundStyle(LumenTheme.textDim)
-                                }
-                            }
-                            Spacer()
-                            if row.state == .active {
-                                Button("Pause") { downloads.pause(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
-                                Button("Cancel") { downloads.cancel(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
-                            } else if row.state == .paused || row.state == .failed {
-                                Button("Resume") { downloads.resume(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.sky))
-                                Button("Retry") { downloads.retry(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
-                            }
-                            if row.state == .finished || row.destination != nil {
-                                Button("Open") { downloads.open(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
-                                Button("Finder") { downloads.reveal(row.id) }
-                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.sky))
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                    }
-                }
-            }
+                    .buttonStyle(.plain).font(.system(size: 11))
+                    .foregroundStyle(LumenTheme.textDim)
+                    .disabled(!downloads.rows.contains { $0.state == .finished || $0.state == .cancelled })
+            }.padding(12)
         }
+        .foregroundStyle(LumenTheme.text)
         .background(LumenTheme.bgRaised)
-        .overlay(Rectangle().strokeBorder(LumenTheme.border, lineWidth: 1))
+        .onExitCommand(perform: onClose)
     }
 
-    private func color(_ state: DownloadState) -> Color {
-        switch state {
-        case .active: return LumenTheme.sky
-        case .finished: return LumenTheme.lime
-        case .failed: return LumenTheme.coral
-        case .cancelled: return LumenTheme.textDim
-        case .paused: return LumenTheme.amber
+    private func downloadRow(_ row: DownloadRow) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: row.state == .finished ? "checkmark.circle" : "doc")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(row.state == .failed ? LumenTheme.coral : LumenTheme.accent)
+                    .frame(width: 30, height: 34)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(row.filename).font(.system(size: 12, weight: .medium))
+                        .lineLimit(1).truncationMode(.middle).help(row.filename)
+                    Text(status(row)).font(.system(size: 11))
+                        .foregroundStyle(row.state == .failed ? LumenTheme.coral : LumenTheme.textDim)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+            if row.state == .active {
+                ProgressView(value: row.fraction.map { min(1, max(0, $0)) })
+                    .tint(LumenTheme.accent)
+            }
+            HStack(spacing: 12) {
+                if row.state == .active {
+                    Button("Pause") { downloads.pause(row.id) }
+                    Button("Cancel") { downloads.cancel(row.id) }
+                } else if row.state == .paused || row.state == .failed {
+                    if downloads.canResume(row.id) { Button("Resume") { downloads.resume(row.id) } }
+                    if row.source != nil { Button("Retry") { downloads.retry(row.id) } }
+                } else if row.state == .finished {
+                    Button("Open file") { downloads.open(row.id) }
+                    Button("Show in Finder") { downloads.reveal(row.id) }
+                }
+                Spacer(minLength: 0)
+            }
+            .buttonStyle(.plain).font(.system(size: 11, weight: .medium))
+            .foregroundStyle(LumenTheme.accent)
         }
+        .padding(12)
+        .background(LumenTheme.field, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(LumenTheme.border, lineWidth: 1))
     }
 
-    private func progressText(_ row: DownloadRow) -> String {
-        let written = MemoryFormat.megabytes(row.bytesWritten)
-        let speed = row.bytesPerSecond > 1 ? " · \(MemoryFormat.megabytes(Int64(row.bytesPerSecond)))/s" : ""
-        if row.bytesExpected > 0 {
-            return "\(written) / \(MemoryFormat.megabytes(row.bytesExpected))\(speed)"
+    private func status(_ row: DownloadRow) -> String {
+        switch row.state {
+        case .finished: return "Completed · " + MemoryFormat.megabytes(row.bytesWritten)
+        case .paused: return "Paused · " + MemoryFormat.megabytes(row.bytesWritten)
+        case .cancelled: return "Cancelled"
+        case .failed: return row.detail ?? "Download failed"
+        case .active:
+            let written = MemoryFormat.megabytes(row.bytesWritten)
+            let speed = row.bytesPerSecond > 1 ? " · \(MemoryFormat.megabytes(Int64(row.bytesPerSecond)))/s" : ""
+            return (row.bytesExpected > 0 ? "\(written) / \(MemoryFormat.megabytes(row.bytesExpected))" : written) + speed
         }
-        return written + speed
     }
 }
 

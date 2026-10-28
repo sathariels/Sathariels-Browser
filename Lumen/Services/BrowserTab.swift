@@ -344,36 +344,31 @@ final class BrowserTab: ObservableObject, Identifiable {
     }
 
     func fillPassword(username: String) {
-        guard let host = url?.host else { return }
-        PasswordUnlock.authorize(host: host) { [weak self] ok in
-            guard ok else { return }
-            self?.fillPasswordUnlocked(username: username)
+        guard session?.isPrivate == false, let webView, !webView.isLoading,
+              let approvedURL = webView.url, let host = PasswordPage.host(approvedURL) else { return }
+        PasswordUnlock.authorize(host: host) { [weak self, weak webView] ok in
+            guard ok, let self, let webView, self.webView === webView, !webView.isLoading,
+                  PasswordPage.matches(approvedURL, current: webView.url),
+                  let password = PasswordVault.password(host: host, username: username) else { return }
+            webView.callAsyncJavaScript(
+                PageScripts.fillLogin,
+                arguments: ["username": username, "password": password, "expectedURL": approvedURL.absoluteString],
+                in: nil,
+                in: .defaultClient,
+                completionHandler: nil
+            )
         }
-    }
-
-    private func fillPasswordUnlocked(username: String) {
-        guard let host = url?.host, let webView else { return }
-        guard let password = PasswordVault.password(host: host, username: username) else { return }
-        webView.callAsyncJavaScript(
-            PageScripts.fillLogin,
-            arguments: ["username": username, "password": password],
-            in: nil,
-            in: .page,
-            completionHandler: nil
-        )
     }
 
     func considerPasswordFill() {
-        guard session?.isPrivate == false, let host = url?.host, let webView else {
+        guard session?.isPrivate == false, let webView, let approvedURL = webView.url,
+              let host = PasswordPage.host(approvedURL), !SettingsStore.shared.neverSavePasswords(for: host) else {
             passwordUsernames = []
             return
         }
-        if SettingsStore.shared.neverSavePasswords(for: host) {
-            passwordUsernames = []
-            return
-        }
-        webView.evaluateJavaScript(PageScripts.hasPasswordField) { [weak self] result, _ in
-            guard let self else { return }
+        webView.evaluateJavaScript(PageScripts.hasPasswordField) { [weak self, weak webView] result, _ in
+            guard let self, let webView, self.webView === webView, !webView.isLoading,
+                  PasswordPage.matches(approvedURL, current: webView.url) else { return }
             let hasField = (result as? Bool) ?? (result as? NSNumber)?.boolValue ?? false
             guard hasField else {
                 self.passwordUsernames = []
@@ -381,9 +376,7 @@ final class BrowserTab: ObservableObject, Identifiable {
             }
             let accounts = PasswordVault.accounts(for: host)
             self.passwordUsernames = accounts.map(\.username)
-            if accounts.count == 1 {
-                self.fillPassword(username: accounts[0].username)
-            }
+            // Filling requires an explicit selection in browser chrome.
         }
     }
 

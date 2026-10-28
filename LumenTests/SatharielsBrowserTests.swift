@@ -15,6 +15,27 @@ final class SatharielsBrowserTests: XCTestCase {
         try await store.removeContentRuleList(forIdentifier: identifier)
     }
 
+    func testPasswordFillRequiresApprovedSecurePage() throws {
+        let approved = try XCTUnwrap(URL(string: "https://example.com/login"))
+        XCTAssertEqual(PasswordPage.host(approved), "example.com")
+        XCTAssertTrue(PasswordPage.matches(approved, current: approved))
+        for raw in ["http://example.com/login", "https://example.com:8443/login", "https://other.example/login", "https://example.com/changed", "https://user@example.com/login"] {
+            XCTAssertFalse(PasswordPage.matches(approved, current: URL(string: raw)))
+        }
+        XCTAssertNil(PasswordPage.host(URL(string: "http://example.com")))
+        XCTAssertNil(PasswordPage.host(URL(string: "https://example.com:8443")))
+        XCTAssertNil(PasswordPage.host(URL(string: "https://user@example.com")))
+        XCTAssertNil(PasswordPage.host(nil))
+    }
+
+    func testClearDownloadsPreservesRecoverableTransfers() {
+        XCTAssertTrue(DownloadController.canClear(.finished))
+        XCTAssertTrue(DownloadController.canClear(.cancelled))
+        XCTAssertFalse(DownloadController.canClear(.active))
+        XCTAssertFalse(DownloadController.canClear(.paused))
+        XCTAssertFalse(DownloadController.canClear(.failed))
+    }
+
     func testClipboardMigrationAndOriginalImage() throws {
         let item = ClipItem(id: UUID(), kind: .image, text: "Image", created: Date(), pinned: true,
                             thumbFile: "preview.jpg", imageFile: "original.tiff")
@@ -83,6 +104,12 @@ final class SatharielsBrowserTests: XCTestCase {
 
     @MainActor
     func testBackgroundTabBudgetProtectsEdits() async throws {
+        // The four-tab budget belongs to Aggressive mode; Smart deliberately
+        // keeps recently used tabs awake. Do not depend on the user's preference.
+        let settings = SettingsStore.shared
+        let previousMode = settings.tabSleepMode
+        settings.tabSleepMode = .aggressive
+        defer { settings.tabSleepMode = previousMode }
         let session = BrowserSession(launch: WindowLaunch(index: -102, isPrivate: true))
         defer { session.shutdown() }
         for _ in 0..<7 { session.newTab(url: URL(string: "about:blank")) }

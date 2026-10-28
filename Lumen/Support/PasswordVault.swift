@@ -38,6 +38,8 @@ enum PasswordVault {
             kSecAttrServer as String: host,
             kSecAttrAccount as String: username,
             kSecAttrLabel as String: labelPrefix,
+            kSecAttrProtocol as String: kSecAttrProtocolHTTPS,
+            kSecAttrPort as String: 443,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
             kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
@@ -61,6 +63,9 @@ enum PasswordVault {
             kSecClass as String: kSecClassInternetPassword,
             kSecAttrServer as String: host,
             kSecAttrAccount as String: username,
+            kSecAttrLabel as String: labelPrefix,
+            kSecAttrProtocol as String: kSecAttrProtocolHTTPS,
+            kSecAttrPort as String: 443,
             kSecAttrSynchronizable as String: kSecAttrSynchronizableAny
         ]
         SecItemDelete(query as CFDictionary)
@@ -74,6 +79,7 @@ enum PasswordVault {
             kSecClass as String: kSecClassInternetPassword,
             kSecAttrServer as String: host,
             kSecAttrAccount as String: username,
+            kSecAttrLabel as String: labelPrefix,
             kSecAttrProtocol as String: kSecAttrProtocolHTTPS,
             kSecAttrPort as String: 443,
             kSecAttrSynchronizable as String: synchronizable ? kCFBooleanTrue as Any : kCFBooleanFalse as Any
@@ -85,5 +91,19 @@ enum PasswordVault {
         insert[kSecAttrLabel as String] = labelPrefix
         let status = SecItemAdd(insert as CFDictionary, nil)
         return status == errSecSuccess
+    }
+}
+
+/// Existing vault entries are HTTPS credentials for the standard port only.
+/// Never offer them to HTTP, another port, or a page that changed during unlock.
+enum PasswordPage {
+    static func host(_ url: URL?) -> String? {
+        guard let url, url.scheme?.lowercased() == "https", (url.port ?? 443) == 443,
+              url.user == nil, url.password == nil, let host = url.host, !host.isEmpty else { return nil }
+        return host.lowercased()
+    }
+
+    static func matches(_ approved: URL, current: URL?) -> Bool {
+        host(approved) != nil && approved == current
     }
 }

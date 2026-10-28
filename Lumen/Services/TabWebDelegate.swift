@@ -16,7 +16,11 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             return
         }
         guard message.name == "lumenPassword", session?.isPrivate != true else { return }
-        guard message.frameInfo.isMainFrame else { return }
+        guard message.frameInfo.isMainFrame,
+              message.frameInfo.securityOrigin.protocol == "https",
+              [0, 443].contains(message.frameInfo.securityOrigin.port),
+              let pageHost = PasswordPage.host(message.webView?.url),
+              pageHost == message.frameInfo.securityOrigin.host.lowercased() else { return }
         guard let body = message.body as? [String: Any] else { return }
         let username = String((body["username"] as? String ?? "").prefix(256))
         let password = String((body["password"] as? String ?? "").prefix(1024))
@@ -110,9 +114,13 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     private func navigationChoice(for url: URL, action: WKNavigationAction) -> NavigationChoice {
         let method = action.request.httpMethod?.uppercased() ?? "GET"
-        guard method == "GET" || method == "HEAD" else { return .allow }
         let settings = SettingsStore.shared
-        var current = url
+        if settings.safeBrowsing, tab?.threatBypass.contains(url.absoluteString) != true, ThreatList.shared.contains(url) {
+            return .warn(.unsafe(url))
+        }
+        // Do not rewrite or replay POST bodies, but still apply threat checks above.
+        guard method == "GET" || method == "HEAD" else { return .allow }
+        let current = url
         if settings.stripTracking, let stripped = TrackingStrip.stripped(current), stripped.absoluteString != current.absoluteString {
             return .load(stripped)
         }
@@ -202,9 +210,8 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard let session else { return nil }
-        let host = navigationAction.request.url?.host?.lowercased()
-            ?? tab?.url?.host?.lowercased()
-            ?? ""
+        // Permission belongs to the opener, not the destination it chooses.
+        let host = navigationAction.sourceFrame.securityOrigin.host.lowercased()
         if !host.isEmpty {
             switch session.permissions.choice(host: host, kind: .popups) {
             case .deny:

@@ -18,7 +18,7 @@ struct SidebarView: View {
                 upper
             }
             Rectangle().fill(LumenTheme.border).frame(height: 1)
-            SectionLabel(title: "Clipboard", color: LumenTheme.teal)
+            SectionLabel(title: "Clipboard", color: LumenTheme.accent)
             clipboardList
                 .frame(minHeight: 120, maxHeight: session.clipboardOnly ? .infinity : session.clipboardHeight)
             footer
@@ -29,12 +29,12 @@ struct SidebarView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Rectangle()
-                .fill(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)
+                .fill(session.isPrivate ? LumenTheme.coral : LumenTheme.accent)
                 .frame(width: 10, height: 10)
             Text(session.isPrivate ? "PRIVATE" : "SATHARIELS")
                 .font(LumenTheme.micro)
                 .tracking(1.6)
-                .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)
+                .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.accent)
             Spacer()
         }
         .padding(8)
@@ -42,9 +42,9 @@ struct SidebarView: View {
 
     private var paneSwitcher: some View {
         HStack(spacing: 4) {
-            switcher("Tabs", .tabs, LumenTheme.amber)
-            switcher("Saved", .bookmarks, LumenTheme.lime)
-            switcher("History", .history, LumenTheme.sky)
+            switcher("Tabs", .tabs, LumenTheme.accent)
+            switcher("Saved", .bookmarks, LumenTheme.accent)
+            switcher("History", .history, LumenTheme.accent)
         }
         .padding(.horizontal, 8)
         .padding(.bottom, 6)
@@ -85,7 +85,7 @@ struct SidebarView: View {
                         TabRow(session: session, tab: tab)
                     }
                     Button("New tab") { session.newTab() }
-                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
                         .padding(8)
                     LocalhostSection(session: session)
                 case .bookmarks:
@@ -93,7 +93,7 @@ struct SidebarView: View {
                         emptyLine("No bookmarks yet. Star a page to keep it.")
                     }
                     ForEach(bookmarks.bookmarks) { mark in
-                        libraryRow(title: mark.title, subtitle: mark.host, color: LumenTheme.lime) {
+                        libraryRow(title: mark.title, subtitle: mark.host, color: LumenTheme.accent) {
                             if let url = URL(string: mark.url) { session.navigateFocused(to: url) }
                         } onDelete: { bookmarks.delete(mark.id) }
                     }
@@ -104,7 +104,7 @@ struct SidebarView: View {
                         emptyLine("Pages you visit show up here.")
                     } else {
                         ForEach(history.entries.prefix(200)) { entry in
-                            libraryRow(title: entry.title, subtitle: entry.host, color: LumenTheme.sky) {
+                            libraryRow(title: entry.title, subtitle: entry.host, color: LumenTheme.accent) {
                                 if let url = URL(string: entry.url) { session.navigateFocused(to: url) }
                             } onDelete: { history.delete(entry.id) }
                         }
@@ -137,7 +137,7 @@ struct SidebarView: View {
                 Button(settings.clipboardCapture ? "Pause" : "Resume") {
                     settings.clipboardCapture.toggle()
                 }
-                .buttonStyle(LumenButtonStyle(tint: LumenTheme.teal))
+                .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
                 Button("Clear") { clipboard.clearUnpinned() }
                     .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
                 Spacer()
@@ -202,7 +202,7 @@ struct LocalhostSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(open ? "Local −" : "Local +") { open.toggle() }
-                .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
+                .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
                 .padding(.horizontal, 8)
                 .padding(.bottom, 4)
             if open {
@@ -218,18 +218,18 @@ struct LocalhostSection: View {
                     }
                     .buttonStyle(.plain)
                     .font(LumenTheme.monoSmall)
-                    .foregroundStyle(LumenTheme.lime)
+                    .foregroundStyle(LumenTheme.accent)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
                 }
                 HStack(spacing: 6) {
                     Button(model.scanning ? "…" : "Scan") { model.scan() }
-                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
                         .disabled(model.scanning)
                     Toggle(isOn: $settings.localhostAutoReload) {
                         Text("Reload")
                             .font(LumenTheme.micro)
-                            .foregroundStyle(LumenTheme.lime)
+                            .foregroundStyle(LumenTheme.accent)
                     }
                     .toggleStyle(.checkbox)
                     .help("Reload the focused localhost tab when the server restarts. Off by default.")
@@ -318,7 +318,7 @@ struct ClipboardRow: View {
     var body: some View {
         HStack(spacing: 6) {
             Rectangle()
-                .fill(item.kind == .url ? LumenTheme.sky : LumenTheme.teal)
+                .fill(item.kind == .url ? LumenTheme.accent : LumenTheme.accent)
                 .frame(width: 8, height: 8)
             if let thumb {
                 Image(nsImage: thumb).resizable().frame(width: 16, height: 16)
@@ -330,7 +330,7 @@ struct ClipboardRow: View {
             Spacer(minLength: 4)
             Button { store.togglePin(item.id) } label: {
                 Image(systemName: item.pinned ? "pin.fill" : "pin")
-                    .foregroundStyle(item.pinned ? LumenTheme.amber : LumenTheme.textDim)
+                    .foregroundStyle(item.pinned ? LumenTheme.accent : LumenTheme.textDim)
             }
             .buttonStyle(.plain)
             .help(item.pinned ? "Unpin" : "Pin")
@@ -338,7 +338,7 @@ struct ClipboardRow: View {
                 Button("Paste") {
                     session.paste(text: item.text ?? "", intoAddress: NSApp.keyWindow?.firstResponder is NSTextView)
                 }
-                .buttonStyle(LumenButtonStyle(tint: LumenTheme.teal))
+                .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
             }
         }
         .padding(.horizontal, 8)
@@ -364,7 +364,7 @@ struct BrowserRail: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            railButton("sparkles", "AI assistant", active: session.grokVisible) { session.toggleGrok() }
+            railButton("bubble.left.and.text.bubble.right", "AI assistant", active: session.grokVisible) { session.toggleGrok() }
             railButton("rectangle.on.rectangle", "Tabs and library", active: session.sidebarVisible && !session.grokVisible && !session.clipboardOnly) {
                 let wasTabs = session.sidebarVisible && !session.grokVisible && !session.clipboardOnly
                 session.grokVisible = false
@@ -377,13 +377,13 @@ struct BrowserRail: View {
                 session.clipboardOnly = true
                 session.sidebarVisible = !wasClipboard
             }
-            railButton("globe", "Google AI Mode", active: false) {
+            railButton("brand-google", "Google AI Mode", active: false) {
                 session.newTab(url: URL(string: "https://www.google.com/ai"))
             }
-            railButton("xmark", "X · x.com", active: false) {
+            railButton("brand-x", "X · x.com", active: false) {
                 session.newTab(url: URL(string: "https://x.com"))
             }
-            railButton("graduationcap", "Canvas · University of Wisconsin", active: false) {
+            railButton("brand-canvas", "Canvas · University of Wisconsin", active: false) {
                 session.newTab(url: URL(string: "https://canvas.wisc.edu/"))
             }
             Spacer(minLength: 12)
@@ -397,14 +397,38 @@ struct BrowserRail: View {
     }
 
     private func railButton(_ icon: String, _ title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        RailButton(icon: icon, title: title, active: active, action: action)
+    }
+}
+
+private struct RailButton: View {
+    let icon: String
+    let title: String
+    let active: Bool
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 17, weight: .regular))
-                .foregroundStyle(active ? LumenTheme.text : LumenTheme.textDim)
-                .frame(width: 36, height: 36)
-                .background(active ? Color.white.opacity(0.09) : .clear, in: RoundedRectangle(cornerRadius: 10))
+            Group {
+                if icon.hasPrefix("brand-") {
+                    Image(icon).resizable().scaledToFit().frame(width: 19, height: 19)
+                } else {
+                    Image(systemName: icon).font(.system(size: 17, weight: .regular))
+                }
+            }
+            .foregroundStyle(LumenTheme.accent)
+            .frame(width: 36, height: 36)
+            .background(active || hovered ? LumenTheme.accent.opacity(active ? 0.18 : 0.09) : .clear,
+                        in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(active ? LumenTheme.accent.opacity(0.5) : .clear, lineWidth: 1))
+            .overlay(alignment: .leading) {
+                if active { Capsule().fill(LumenTheme.accent).frame(width: 2, height: 16).offset(x: -5) }
+            }
         }
         .buttonStyle(.plain)
+        .onHover { hovered = $0 }
         .help(title)
         .accessibilityLabel(title)
     }

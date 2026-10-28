@@ -99,8 +99,11 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
         release(id, deletePartial: true)
     }
 
+    func canResume(_ id: UUID) -> Bool { resumeDataExists(id) }
+
     func open(_ id: UUID) {
-        guard let url = rows.first(where: { $0.id == id })?.destination else { return }
+        guard let row = rows.first(where: { $0.id == id }), row.state == .finished,
+              let url = row.destination, FileManager.default.fileExists(atPath: url.path) else { return }
         NSWorkspace.shared.open(url)
     }
 
@@ -109,13 +112,17 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
+    static func canClear(_ state: DownloadState) -> Bool {
+        state == .finished || state == .cancelled
+    }
+
     func clearFinished() {
-        let finished = rows.filter { $0.state != .active }
+        let finished = rows.filter { Self.canClear($0.state) }
         for row in finished {
             deleteResume(row.id)
             release(row.id, deletePartial: false)
         }
-        rows.removeAll { $0.state != .active }
+        rows.removeAll { Self.canClear($0.state) }
         persist()
     }
 
