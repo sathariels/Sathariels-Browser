@@ -140,7 +140,7 @@ enum ProcessFootprint {
 
     private static func processName(_ pid: Int32) -> String? {
         var buffer = [CChar](repeating: 0, count: 256)
-        let n = proc_name(pid, &buffer, UInt32(buffer.count))
+        let n = copyProcessName(pid, &buffer, UInt32(buffer.count))
         guard n > 0 else { return nil }
         return String(cString: buffer)
     }
@@ -153,7 +153,7 @@ private func proc_pidinfo(_ pid: Int32, _ flavor: Int32, _ arg: UInt64, _ buffer
 private func proc_listchildpids(_ ppid: Int32, _ buffer: UnsafeMutableRawPointer?, _ buffersize: Int32) -> Int32
 
 @_silgen_name("proc_name")
-private func proc_name(_ pid: Int32, _ buffer: UnsafeMutablePointer<CChar>?, _ buffersize: UInt32) -> Int32
+private func copyProcessName(_ pid: Int32, _ buffer: UnsafeMutablePointer<CChar>?, _ buffersize: UInt32) -> Int32
 
 final class MemoryPressureCenter {
     static let shared = MemoryPressureCenter()

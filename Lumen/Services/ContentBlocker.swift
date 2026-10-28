@@ -63,12 +63,18 @@ final class ContentBlocker: ObservableObject {
         let digest = SHA256.hash(data: Data(source.utf8))
         let suffix = digest.prefix(4).map { String(format: "%02x", $0) }.joined()
         let identifier = "sathariels.blocker.\(suffix)"
-        guard let store = WKContentRuleListStore.default() else {
+        guard let store = await WKContentRuleListStore.default() else {
             throw CocoaError(.coderInvalidValue)
         }
         if let existing = try await store.contentRuleList(forIdentifier: identifier) {
             return existing
         }
-        return try await store.compileContentRuleList(forIdentifier: identifier, encodedContentRuleList: source)
+        guard let compiled = try await store.compileContentRuleList(
+            forIdentifier: identifier,
+            encodedContentRuleList: source
+        ) else {
+            throw CocoaError(.coderInvalidValue)
+        }
+        return compiled
     }
 }
