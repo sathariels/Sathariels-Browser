@@ -20,6 +20,8 @@
 		9EA10B524A44D79E9259EADB /* ClipboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 949AD731D22B481BCC83E266 /* ClipboardStore.swift */; };
 		0F2E172077430F572EAB66BA /* ContentBlocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ContentBlocker.swift"; sourceTree = "<group>"; };
 		9B369BEAFE5F8D5B1E15CC2C /* ContentBlocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2E172077430F572EAB66BA /* ContentBlocker.swift */; };
+		FBDBE49DDF535048A7B2C513 /* CrashCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/CrashCenter.swift"; sourceTree = "<group>"; };
+		03EAD7720FF3783BD9A55452 /* CrashCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDBE49DDF535048A7B2C513 /* CrashCenter.swift */; };
 		2AFC2C428F628A1935C1193F /* DownloadController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/DownloadController.swift"; sourceTree = "<group>"; };
 		27070F6EBAFC5DBB28F149BB /* DownloadController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AFC2C428F628A1935C1193F /* DownloadController.swift */; };
 		C83F3FB4455F56E2BC2353CD /* ExtensionCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ExtensionCenter.swift"; sourceTree = "<group>"; };
@@ -36,6 +38,8 @@
 		085AC09D61866E9A9D45F258 /* PermissionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFEE526FD9622F4EBEAE2D9 /* PermissionStore.swift */; };
 		45DD32C1EA336A5182187FDD /* PopupCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/PopupCenter.swift"; sourceTree = "<group>"; };
 		546DD3F76B93ABC57D82ED34 /* PopupCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45DD32C1EA336A5182187FDD /* PopupCenter.swift */; };
+		7AE05705E721FA6013A53BF2 /* Reader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/Reader.swift"; sourceTree = "<group>"; };
+		D3A44D22E7622F945D39EFA1 /* Reader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE05705E721FA6013A53BF2 /* Reader.swift */; };
 		C07B443B7236DFC67B04A95A /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SessionStore.swift"; sourceTree = "<group>"; };
 		6318916E6D24DB7CE55173E8 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07B443B7236DFC67B04A95A /* SessionStore.swift */; };
 		4B7049C754F0A44229273418 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SettingsStore.swift"; sourceTree = "<group>"; };
@@ -68,6 +72,8 @@
 		1A80314B24B9BA7728AC3766 /* GrokPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50F3BD5E3556D9206719F2C /* GrokPanel.swift */; };
 		DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/JSONTreeView.swift"; sourceTree = "<group>"; };
 		A59207734A759114BD573B0F /* JSONTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */; };
+		1A2F77C6C68AA863B38C61D5 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/ReaderView.swift"; sourceTree = "<group>"; };
+		A09A71A0A6AEB9C3C5520065 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2F77C6C68AA863B38C61D5 /* ReaderView.swift */; };
 		B4D1FC7E20CAFB535E6B1E9F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SettingsView.swift"; sourceTree = "<group>"; };
 		5A048A5962D239BE0A1D024E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D1FC7E20CAFB535E6B1E9F /* SettingsView.swift */; };
 		08536FE46846110A7CBD5AEC /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SidebarView.swift"; sourceTree = "<group>"; };
@@ -156,6 +162,7 @@
 				BFA11CFCD92ED5E3F52C0298,
 				949AD731D22B481BCC83E266,
 				0F2E172077430F572EAB66BA,
+				FBDBE49DDF535048A7B2C513,
 				2AFC2C428F628A1935C1193F,
 				C83F3FB4455F56E2BC2353CD,
 				C03CD11C29D2C03346905E65,
@@ -164,6 +171,7 @@
 				DACC665535B178B17F150FB0,
 				BCFEE526FD9622F4EBEAE2D9,
 				45DD32C1EA336A5182187FDD,
+				7AE05705E721FA6013A53BF2,
 				C07B443B7236DFC67B04A95A,
 				4B7049C754F0A44229273418,
 				EA619D15D380297C0117B8FC,
@@ -180,6 +188,7 @@
 				603C240113B3E90796F4BB59,
 				E50F3BD5E3556D9206719F2C,
 				DBFA3A1CCECE328E132687D5,
+				1A2F77C6C68AA863B38C61D5,
 				B4D1FC7E20CAFB535E6B1E9F,
 				08536FE46846110A7CBD5AEC,
 				99BCA03D3FE0CF5E63DABBEF,
@@ -276,6 +285,7 @@
 				FB597AF185E7CC9616D7975C,
 				9EA10B524A44D79E9259EADB,
 				9B369BEAFE5F8D5B1E15CC2C,
+				03EAD7720FF3783BD9A55452,
 				27070F6EBAFC5DBB28F149BB,
 				51BA37AAAA1B87318E9587C5,
 				C36AF754F5003DDAF5F717F3,
@@ -284,6 +294,7 @@
 				F5EF242C9EF311A0E562A634,
 				085AC09D61866E9A9D45F258,
 				546DD3F76B93ABC57D82ED34,
+				D3A44D22E7622F945D39EFA1,
 				6318916E6D24DB7CE55173E8,
 				1211513AAF67BB5112FF4671,
 				14057A0D167B72568C56152B,
@@ -300,6 +311,7 @@
 				AB621C61F914F23FEDD4AE8D,
 				1A80314B24B9BA7728AC3766,
 				A59207734A759114BD573B0F,
+				A09A71A0A6AEB9C3C5520065,
 				5A048A5962D239BE0A1D024E,
 				26C9A947185B64CFCEE288B0,
 				1BEC01B3931D53BBBE4995A5,
@@ -420,7 +432,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.5.1;
+				CURRENT_PROJECT_VERSION = 0.6.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -429,7 +441,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.5.1;
+				MARKETING_VERSION = 0.6.0;
 				SWIFT_OBJC_BRIDGING_HEADER = Lumen/Support/Lumen-Bridging-Header.h;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
@@ -451,7 +463,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.5.1;
+				CURRENT_PROJECT_VERSION = 0.6.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -460,7 +472,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.5.1;
+				MARKETING_VERSION = 0.6.0;
 				SWIFT_OBJC_BRIDGING_HEADER = Lumen/Support/Lumen-Bridging-Header.h;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;

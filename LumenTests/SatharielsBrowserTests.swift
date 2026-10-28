@@ -379,6 +379,58 @@ final class SatharielsBrowserTests: XCTestCase {
         XCTAssertEqual(aggressive, [recent])
     }
 
+    func testReaderPrefersImageStripForChapters() {
+        XCTAssertTrue(ReaderExtract.prefersImageStrip(imageCount: 12, textCharacters: 400))
+        XCTAssertFalse(ReaderExtract.prefersImageStrip(imageCount: 2, textCharacters: 4000))
+        let page = ReaderScript.page(from: [
+            "title": "Chapter",
+            "imageStrip": true,
+            "blocks": [["kind": "image", "text": "https://example.com/1.jpg"], ["kind": "image", "text": "https://example.com/2.jpg"]],
+        ] as [String: Any])
+        XCTAssertEqual(page?.imageStrip, true)
+        XCTAssertEqual(page?.blocks.count, 2)
+    }
+
+    func testDownloadListRoundTrip() throws {
+        let record = DownloadRecord(
+            id: UUID(), filename: DownloadController.safeFilename("a/b:file.bin"),
+            destination: "/tmp/file.bin", source: "https://example.com/file.bin",
+            bytesWritten: 10, bytesExpected: 20, state: .paused, detail: nil, hasResume: true
+        )
+        XCTAssertEqual(record.filename, "b-file.bin")
+        let data = try JSONEncoder().encode([record])
+        XCTAssertEqual(try JSONDecoder().decode([DownloadRecord].self, from: data), [record])
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let first = folder.appendingPathComponent("page.cbz")
+        try Data("a".utf8).write(to: first)
+        let unique = DownloadController.uniqueURL(first)
+        XCTAssertNotEqual(unique.lastPathComponent, "page.cbz")
+    }
+
+    func testUncleanExitIsDetected() {
+        XCTAssertTrue(CrashCenter.interpret(state: "running"))
+        XCTAssertFalse(CrashCenter.interpret(state: "clean"))
+        XCTAssertFalse(CrashCenter.interpret(state: nil))
+    }
+
+    func testSessionKeepsScrollAndStateFile() throws {
+        let id = UUID()
+        let snapshot = TabSnapshot(
+            id: id, url: "https://asurascans.com/", title: "Asura", colorIndex: 1,
+            pinned: true, scrollX: 0, scrollY: 1400, stateFile: "states/\(id.uuidString).bin"
+        )
+        let data = try JSONEncoder().encode(snapshot)
+        let decoded = try JSONDecoder().decode(TabSnapshot.self, from: data)
+        XCTAssertEqual(decoded.scrollY, 1400)
+        XCTAssertEqual(decoded.stateFile, snapshot.stateFile)
+        XCTAssertTrue(decoded.pinned)
+        let legacy: [String: Any] = ["id": id.uuidString, "title": "Old", "colorIndex": 0, "pinned": false]
+        let old = try JSONDecoder().decode(TabSnapshot.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(old.scrollY)
+        XCTAssertNil(old.stateFile)
+    }
+
     func testAsuraHostsAreNotThreatListed() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
         let hashes = ThreatList.decode(try Data(contentsOf: url))

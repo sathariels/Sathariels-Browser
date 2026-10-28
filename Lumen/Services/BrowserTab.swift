@@ -38,6 +38,9 @@ final class BrowserTab: ObservableObject, Identifiable {
     var lastFocused = Date.distantPast
     var focusCount = 0
     var scrollRestore: (x: Double, y: Double, url: String)?
+    var savedScroll: (x: Double, y: Double)?
+    var stateFile: String?
+    @Published var reader: ReaderPage?
     weak var session: BrowserSession?
     let delegate: TabWebDelegate
     private var observations: [NSKeyValueObservation] = []
@@ -81,6 +84,8 @@ final class BrowserTab: ObservableObject, Identifiable {
         jsonDocument = nil
         lastFocused = Date()
         scrollRestore = nil
+        savedScroll = nil
+        reader = nil
         if webView == nil {
             wake()
         } else {
@@ -104,8 +109,32 @@ final class BrowserTab: ObservableObject, Identifiable {
         )
         let view = WKWebView(frame: .zero, configuration: configuration)
         install(view, capturePasswords: !session.isPrivate, pageGhost: SettingsStore.shared.pageFieldGhost && !session.isPrivate)
-        if let url {
+        if let data = SessionStateStore.read(stateFile) {
+            view.interactionState = data
+        } else if let url {
             view.load(URLRequest(url: url))
+            if let savedScroll {
+                scrollRestore = (savedScroll.x, savedScroll.y, url.absoluteString)
+            }
+        }
+    }
+
+    func captureInteractionState() {
+        guard let data = SessionStateStore.data(from: webView?.interactionState) else { return }
+        stateFile = SessionStateStore.write(id: id, data: data) ?? stateFile
+    }
+
+    func toggleReader() {
+        if reader != nil {
+            reader = nil
+            return
+        }
+        guard let webView else { return }
+        let world = WKContentWorld.world(name: "sathariels.reader")
+        Task { @MainActor [weak self, weak webView] in
+            guard let webView else { return }
+            let result = try? await webView.evaluateJavaScript(ReaderScript.source, in: nil, contentWorld: world)
+            self?.reader = ReaderScript.page(from: result)
         }
     }
 
@@ -201,10 +230,12 @@ final class BrowserTab: ObservableObject, Identifiable {
         let x = scrollRestore.x
         let y = scrollRestore.y
         self.scrollRestore = nil
+        savedScroll = (x, y)
         webView.evaluateJavaScript("window.scrollTo(\(x), \(y));", completionHandler: nil)
     }
 
     func suspend() {
+        captureInteractionState()
         releaseWebView()
         isLoading = false
         progress = 0

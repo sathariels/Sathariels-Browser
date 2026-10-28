@@ -506,6 +506,8 @@ struct PaneContent: View {
         Group {
             if let warning = tab.pageWarning {
                 PageWarningView(warning: warning) { tab.allowCurrentWarning() }
+            } else if let page = tab.reader {
+                ReaderView(tab: tab, page: page)
             } else if let document = tab.jsonDocument {
                 JSONTreeView(tab: tab, document: document)
             } else if let webView = tab.webView {
@@ -798,9 +800,17 @@ struct DownloadsPanel: View {
                             }
                             Spacer()
                             if row.state == .active {
+                                Button("Pause") { downloads.pause(row.id) }
+                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
                                 Button("Cancel") { downloads.cancel(row.id) }
                                     .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
-                            } else if row.state == .finished {
+                            } else if row.state == .paused || row.state == .failed {
+                                Button("Resume") { downloads.resume(row.id) }
+                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.sky))
+                                Button("Retry") { downloads.retry(row.id) }
+                                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
+                            }
+                            if row.state == .finished || row.destination != nil {
                                 Button("Open") { downloads.open(row.id) }
                                     .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
                                 Button("Finder") { downloads.reveal(row.id) }
@@ -822,15 +832,17 @@ struct DownloadsPanel: View {
         case .finished: return LumenTheme.lime
         case .failed: return LumenTheme.coral
         case .cancelled: return LumenTheme.textDim
+        case .paused: return LumenTheme.amber
         }
     }
 
     private func progressText(_ row: DownloadRow) -> String {
         let written = MemoryFormat.megabytes(row.bytesWritten)
+        let speed = row.bytesPerSecond > 1 ? " · \(MemoryFormat.megabytes(Int64(row.bytesPerSecond)))/s" : ""
         if row.bytesExpected > 0 {
-            return "\(written) / \(MemoryFormat.megabytes(row.bytesExpected))"
+            return "\(written) / \(MemoryFormat.megabytes(row.bytesExpected))\(speed)"
         }
-        return written
+        return written + speed
     }
 }
 

@@ -7,9 +7,11 @@ struct SatharielsBrowserApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
+        CrashCenter.install()
         RuleCompile.parse()
         ScreenshotLaunch.parse()
         LaunchCoordinator.shared.load()
+        CrashCenter.prepareForLaunch()
     }
 
     var body: some Scene {
@@ -67,6 +69,7 @@ struct BrowserRoot: View {
                 toggleSidebar: { session.sidebarVisible.toggle() },
                 inspect: { session.showInspector() },
                 copyMarkdown: { session.copyPageMarkdown() },
+                toggleReader: { session.focusedTab?.toggleReader() },
                 selectTab: { index in
                     guard session.tabs.indices.contains(index) else { return }
                     session.select(session.tabs[index].id)
@@ -162,6 +165,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // address bar ignores typing until the app is a normal foreground app.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
+        if RuleCompile.directory == nil, !ScreenshotLaunch.enabled, let report = CrashCenter.takeReport() {
+            CrashCenter.present(report)
+        }
         if let directory = RuleCompile.directory {
             Task { @MainActor in
                 await ContentBlocker.shared.precompileBundled(to: directory)
@@ -179,7 +185,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        SessionRegistry.shared.keySession?.focusedTab?.captureInteractionState()
         SessionStore.shared.saveNow()
+        CrashCenter.markClean()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { false }
@@ -216,6 +224,7 @@ struct BrowserActions {
     var toggleSidebar: () -> Void
     var inspect: () -> Void
     var copyMarkdown: () -> Void
+    var toggleReader: () -> Void
     var selectTab: (Int) -> Void
 }
 
@@ -288,6 +297,8 @@ struct SatharielsBrowserCommands: Commands {
                 .keyboardShortcut("i", modifiers: [.command, .option])
             Button("Copy Page as Markdown") { actions?.copyMarkdown() }
                 .keyboardShortcut("m", modifiers: [.command, .option])
+            Button("Reading Mode") { actions?.toggleReader() }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
         }
         CommandMenu("Tabs") {
             ForEach(1..<10, id: \.self) { number in

@@ -117,14 +117,20 @@ struct TabSnapshot: Codable, Equatable, Identifiable {
     var colorIndex: Int
     var pinned: Bool
     var groupID: UUID?
+    var scrollX: Double?
+    var scrollY: Double?
+    var stateFile: String?
 
-    init(id: UUID, url: String?, title: String, colorIndex: Int, pinned: Bool = false, groupID: UUID? = nil) {
+    init(id: UUID, url: String?, title: String, colorIndex: Int, pinned: Bool = false, groupID: UUID? = nil, scrollX: Double? = nil, scrollY: Double? = nil, stateFile: String? = nil) {
         self.id = id
         self.url = url
         self.title = title
         self.colorIndex = colorIndex
         self.pinned = pinned
         self.groupID = groupID
+        self.scrollX = scrollX
+        self.scrollY = scrollY
+        self.stateFile = stateFile
     }
 
     init(from decoder: Decoder) throws {
@@ -135,6 +141,9 @@ struct TabSnapshot: Codable, Equatable, Identifiable {
         colorIndex = try container.decode(Int.self, forKey: .colorIndex)
         pinned = try container.decodeIfPresent(Bool.self, forKey: .pinned) ?? false
         groupID = try container.decodeIfPresent(UUID.self, forKey: .groupID)
+        scrollX = try container.decodeIfPresent(Double.self, forKey: .scrollX)
+        scrollY = try container.decodeIfPresent(Double.self, forKey: .scrollY)
+        stateFile = try container.decodeIfPresent(String.self, forKey: .stateFile)
     }
 }
 
@@ -197,6 +206,7 @@ struct AIMessage: Codable, Equatable, Identifiable {
 
 enum DownloadState: String, Codable {
     case active
+    case paused
     case finished
     case failed
     case cancelled
@@ -206,9 +216,11 @@ struct DownloadRow: Identifiable, Equatable {
     var id: UUID
     var filename: String
     var destination: URL?
+    var source: String?
     var bytesWritten: Int64
     var bytesExpected: Int64
     var fraction: Double?
+    var bytesPerSecond: Double
     var state: DownloadState
     var detail: String?
     var tabID: UUID?

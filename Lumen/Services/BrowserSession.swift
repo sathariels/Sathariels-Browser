@@ -246,6 +246,7 @@ final class BrowserSession: ObservableObject, Identifiable {
 
     func select(_ id: UUID) {
         guard tab(id) != nil else { return }
+        focusedTab?.captureInteractionState()
         if secondaryTabID == id {
             focusedPane = .secondary
         } else if primaryTabID == id {
@@ -533,6 +534,10 @@ final class BrowserSession: ObservableObject, Identifiable {
             )
             tab.pinned = item.pinned
             tab.groupID = item.groupID
+            tab.stateFile = item.stateFile
+            if let x = item.scrollX, let y = item.scrollY {
+                tab.savedScroll = (x, y)
+            }
             return tab
         }
         if tabs.isEmpty {
@@ -619,6 +624,7 @@ final class BrowserSession: ObservableObject, Identifiable {
                 if media || dirty { return }
                 let x = (info?["x"] as? Double) ?? (info?["x"] as? NSNumber)?.doubleValue ?? 0
                 let y = (info?["y"] as? Double) ?? (info?["y"] as? NSNumber)?.doubleValue ?? 0
+                tab.savedScroll = (x, y)
                 if let url = view.url?.absoluteString {
                     tab.scrollRestore = (x, y, url)
                 }
@@ -697,11 +703,24 @@ final class BrowserSession: ObservableObject, Identifiable {
         }
     }
 
+    func replaceFromSavedSession() {
+        guard let snapshot = SessionStore.shared.load().first(where: { $0.index == windowIndex }) ?? SessionStore.shared.load().first else { return }
+        tabs.forEach { $0.releaseWebView() }
+        restore(snapshot)
+    }
+
     private func snapshot() -> WindowSnapshot {
         WindowSnapshot(
             index: windowIndex,
-            tabs: tabs.map {
-                TabSnapshot(id: $0.id, url: $0.url?.absoluteString, title: $0.title, colorIndex: $0.colorIndex, pinned: $0.pinned, groupID: $0.groupID)
+            tabs: tabs.map { tab in
+                if tab.id == primaryTabID || tab.id == secondaryTabID {
+                    tab.captureInteractionState()
+                }
+                return TabSnapshot(
+                    id: tab.id, url: tab.url?.absoluteString, title: tab.title, colorIndex: tab.colorIndex,
+                    pinned: tab.pinned, groupID: tab.groupID, scrollX: tab.savedScroll?.x, scrollY: tab.savedScroll?.y,
+                    stateFile: tab.stateFile
+                )
             },
             groups: groups,
             primaryTabID: primaryTabID,

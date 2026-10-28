@@ -6,3 +6,6 @@ BOOL LumenAddScriptMessageHandler(WKUserContentController *controller, id<WKScri
 
 /// Removes a handler when it is present. A missing name raises, so the exception is ignored.
 void LumenRemoveScriptMessageHandler(WKUserContentController *controller, NSString *name);
+void LumenInstallCrashNote(const char *path);
+void LumenInstallSignals(void);
+void LumenInstallExceptionHandler(void);
