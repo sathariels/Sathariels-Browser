@@ -125,5 +125,20 @@ jobs:
             Download `Sathariels Browser-macos.zip` or `Sathariels Browser.dmg`, then drag `Sathariels Browser.app` to `/Applications`. Later versions are offered from the application menu, Check for Updates….
 
             The signature is ad-hoc, so Gatekeeper does not treat it as a Developer ID app. The first time you open it, right-click the app, choose Open, then Open again. If macOS only offers Move to Trash, use System Settings → Privacy & Security → Open Anyway.
+
+            Homebrew, from this repository:
+
+            ```
+            brew tap sathariels/sathariels-browser https://github.com/sathariels/Sathariels-Browser
+            brew install sathariels/sathariels-browser/sathariels-browser
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump the Homebrew cask
+        if: github.event_name == 'push'
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.name }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash ./scripts/update-homebrew-cask.sh
