@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -23,6 +24,22 @@ jobs:
           fi
           xcodebuild -version
 
+      - name: Test popup windows
+        run: |
+          xcodebuild test \
+            -project SatharielsBrowser.xcodeproj \
+            -scheme SatharielsBrowser \
+            -destination "platform=macOS" \
+            -derivedDataPath build/DerivedData \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testAdoptedWindowReusesScriptHandlers \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testWindowOpenAndTargetBlankDoNotCrash \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=-" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            ENABLE_HARDENED_RUNTIME=NO \
+            DEVELOPMENT_TEAM=""
+
       - name: Compile Release
         run: |
           xcodebuild \
@@ -40,7 +57,7 @@ jobs:
             build
 
       - name: Screenshot the new tab page and address bar
-        run: bash scripts/capture-ui.sh
+        run: DERIVED_DATA_PATH="$PWD/build/DerivedData" bash scripts/capture-ui.sh
 
       - name: Upload UI screenshots
         uses: actions/upload-artifact@v4

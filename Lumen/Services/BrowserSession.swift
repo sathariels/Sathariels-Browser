@@ -245,7 +245,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func select(_ id: UUID) {
-        guard let tab = tab(id) else { return }
+        guard tab(id) != nil else { return }
         if secondaryTabID == id {
             focusedPane = .secondary
         } else if primaryTabID == id {
@@ -406,11 +406,8 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func suspendForMemory(critical: Bool) {
-        let keep = focusedTab?.id
-        for tab in tabs where tab.id != keep && tab.webView != nil && !DownloadController.shared.isDownloading(tab.id) {
-            tab.favicon = nil
-            tab.suspend()
-        }
+        guard MemoryPressureCenter.shared.isUnderPressure || critical else { return }
+        discardBackgroundTabs(pressure: true, critical: critical || MemoryPressureCenter.shared.critical)
         if critical {
             chatStore?.trimHard()
         } else {
@@ -553,6 +550,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     private func focusCurrent() {
         let tab = focusedTab
         tab?.lastFocused = Date()
+        tab?.focusCount += 1
         if let tab, tab.url != nil, tab.webView == nil, !isCollapsed(tab) {
             tab.wake()
         }
@@ -577,23 +575,76 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func suspendIdle() {
-        let limit = TimeInterval(max(1, SettingsStore.shared.suspendMinutes) * 60)
-        let focused = focusedTab?.id
-        let live = tabs.filter { $0.webView != nil }
-        let candidates = live.filter { $0.id != focused }.sorted { $0.lastFocused < $1.lastFocused }
-        let excess = max(0, live.count - 4)
-        for (index, tab) in candidates.enumerated() {
-            guard !tab.isLoading, !DownloadController.shared.isDownloading(tab.id) else { continue }
-            guard index < excess || Date().timeIntervalSince(tab.lastFocused) > limit else { continue }
-            guard let view = tab.webView else { continue }
-            view.evaluateJavaScript(PageScripts.mediaPlaying) { [weak self, weak tab, weak view] result, error in
-                guard let self, let tab, let view, error == nil,
-                      tab.webView === view, tab.id != self.focusedTab?.id,
-                      !tab.isLoading, !DownloadController.shared.isDownloading(tab.id) else { return }
-                let protected = (result as? Bool) ?? true
-                if !protected { tab.suspend() }
+        let mode = SettingsStore.shared.tabSleepMode
+        let pressure = MemoryPressureCenter.shared.isUnderPressure
+        if mode == .off && !pressure { return }
+        discardBackgroundTabs(pressure: pressure, critical: MemoryPressureCenter.shared.critical)
+    }
+
+    private func discardBackgroundTabs(pressure: Bool, critical: Bool) {
+        let now = Date()
+        let neighborIDs = neighborTabIDs()
+        let visible = visibleTabIDs()
+        let inputs = tabs.map { tab in
+            TabSleepInput(
+                id: tab.id,
+                pinned: tab.pinned,
+                visible: visible.contains(tab.id),
+                neighbor: neighborIDs.contains(tab.id),
+                lastFocused: tab.lastFocused,
+                focusCount: max(1, tab.focusCount),
+                loading: tab.isLoading,
+                downloading: DownloadController.shared.isDownloading(tab.id),
+                capturing: false,
+                hasWebView: tab.webView != nil
+            )
+        }
+        let chosen = TabSleepPolicy.candidates(
+            tabs: inputs,
+            mode: SettingsStore.shared.tabSleepMode,
+            aggressiveMinutes: SettingsStore.shared.suspendMinutes,
+            pressure: pressure,
+            critical: critical,
+            now: now
+        )
+        for id in chosen {
+            guard let tab = tab(id), let view = tab.webView, !tab.capturingMedia() else { continue }
+            view.evaluateJavaScript(PageScripts.sleepSnapshot) { [weak self, weak tab, weak view] result, error in
+                guard let self, let tab, let view, error == nil, tab.webView === view else { return }
+                guard !tab.pinned, !self.visibleTabIDs().contains(tab.id), !self.neighborTabIDs().contains(tab.id) else { return }
+                guard !tab.isLoading, !DownloadController.shared.isDownloading(tab.id), !tab.capturingMedia() else { return }
+                let info = result as? [String: Any]
+                let media = (info?["media"] as? Bool) ?? (info?["media"] as? NSNumber)?.boolValue ?? true
+                let dirty = (info?["dirty"] as? Bool) ?? (info?["dirty"] as? NSNumber)?.boolValue ?? true
+                if media || dirty { return }
+                let x = (info?["x"] as? Double) ?? (info?["x"] as? NSNumber)?.doubleValue ?? 0
+                let y = (info?["y"] as? Double) ?? (info?["y"] as? NSNumber)?.doubleValue ?? 0
+                if let url = view.url?.absoluteString {
+                    tab.scrollRestore = (x, y, url)
+                }
+                if critical { tab.favicon = nil }
+                tab.suspend()
             }
         }
+    }
+
+    private func visibleTabIDs() -> Set<UUID> {
+        Set([primaryTabID, secondaryTabID].compactMap { $0 })
+    }
+
+    private func neighborTabIDs() -> Set<UUID> {
+        var ids = Set<UUID>()
+        let visible = visibleTabIDs()
+        for id in visible {
+            guard let index = tabs.firstIndex(where: { $0.id == id }) else { continue }
+            if index > 0 { ids.insert(tabs[index - 1].id) }
+            if index + 1 < tabs.count { ids.insert(tabs[index + 1].id) }
+        }
+        if let recent = tabs.filter({ !visible.contains($0.id) }).max(by: { $0.lastFocused < $1.lastFocused }) {
+            ids.insert(recent.id)
+        }
+        ids.subtract(visible)
+        return ids
     }
 
     private func pollLocalhost() {

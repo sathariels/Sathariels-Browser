@@ -42,39 +42,38 @@ enum WebKitFactory {
 
         let controller = WKUserContentController()
         for ruleList in ruleLists {
-            controller.add(ruleList)
+            addRuleList(ruleList, to: controller)
         }
         if let site {
-            let permissions = WKUserScript(
+            addUserScript(WKUserScript(
                 source: PageScripts.permissionSource(site),
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: false
-            )
-            controller.addUserScript(permissions)
+            ), to: controller)
         }
-        controller.addUserScript(WKUserScript(
+        addUserScript(WKUserScript(
             source: PageScripts.editedPageWatcher,
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
-        ))
-        controller.addUserScript(WKUserScript(
+        ), to: controller)
+        addUserScript(WKUserScript(
             source: PageScripts.findEngine,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true
-        ))
+        ), to: controller)
         if capturePasswords {
-            controller.addUserScript(WKUserScript(
+            addUserScript(WKUserScript(
                 source: PageScripts.passwordWatcher,
                 injectionTime: .atDocumentEnd,
                 forMainFrameOnly: true
-            ))
+            ), to: controller)
         }
         if pageGhost {
-            controller.addUserScript(WKUserScript(
+            addUserScript(WKUserScript(
                 source: PageScripts.fieldGhost,
                 injectionTime: .atDocumentEnd,
                 forMainFrameOnly: true
-            ))
+            ), to: controller)
         }
         configuration.userContentController = controller
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
@@ -95,22 +94,13 @@ enum WebKitFactory {
         if #available(macOS 13.3, *) {
             webView.isInspectable = true
         }
-        // Register the bridge only when we need it. An empty WKWebView bridge is one of
-        // the signals Google uses to refuse sign-in, so private windows skip it.
-        var names: [String] = []
-        if capturePasswords || pageGhost {
-            let proxy = WeakScriptProxy(target: handler)
-            if capturePasswords {
-                webView.configuration.userContentController.add(proxy, name: "lumenPassword")
-                names.append("lumenPassword")
-            }
-            if pageGhost {
-                webView.configuration.userContentController.add(proxy, name: "lumenGhost")
-                names.append("lumenGhost")
-            }
-            objc_setAssociatedObject(webView, &proxyKey, proxy, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            objc_setAssociatedObject(webView, &handlerNamesKey, names as NSArray, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
+        registerHandlers(on: webView, handler: handler, capturePasswords: capturePasswords, pageGhost: pageGhost)
+    }
+
+    /// Names already registered on this controller. A popup shares the opener's controller,
+    /// so a second add of the same name throws and aborts the process.
+    static func installedHandlerNames(for controller: WKUserContentController) -> Set<String> {
+        ControllerUses.use(for: controller).handlerNames
     }
 
     static func detach(_ webView: WKWebView) {
@@ -118,16 +108,67 @@ enum WebKitFactory {
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
         let controller = webView.configuration.userContentController
-        let names = objc_getAssociatedObject(webView, &handlerNamesKey) as? [String] ?? []
-        for name in names {
-            controller.removeScriptMessageHandler(forName: name)
+        let attached = objc_getAssociatedObject(webView, &attachedKey) != nil
+        objc_setAssociatedObject(webView, &attachedKey, nil, .OBJC_ASSOCIATION_ASSIGN)
+        webView.removeFromSuperview()
+        guard attached else { return }
+        let use = ControllerUses.use(for: controller)
+        use.owners = max(0, use.owners - 1)
+        // Other web views, including the opener, still need the scripts, rules, and handlers.
+        guard use.owners == 0 else { return }
+        for name in use.handlerNames {
+            LumenRemoveScriptMessageHandler(controller, name)
         }
-        controller.removeAllScriptMessageHandlers()
+        use.handlerNames.removeAll()
+        use.proxy = nil
         controller.removeAllUserScripts()
         controller.removeAllContentRuleLists()
-        webView.removeFromSuperview()
-        objc_setAssociatedObject(webView, &proxyKey, nil, .OBJC_ASSOCIATION_ASSIGN)
-        objc_setAssociatedObject(webView, &handlerNamesKey, nil, .OBJC_ASSOCIATION_ASSIGN)
+        use.ruleIDs.removeAll()
+    }
+
+    private static func registerHandlers(
+        on webView: WKWebView,
+        handler: WKScriptMessageHandler,
+        capturePasswords: Bool,
+        pageGhost: Bool
+    ) {
+        if objc_getAssociatedObject(webView, &attachedKey) != nil { return }
+        objc_setAssociatedObject(webView, &attachedKey, NSNumber(value: true), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        let controller = webView.configuration.userContentController
+        let use = ControllerUses.use(for: controller)
+        use.owners += 1
+        // Private windows skip the bridge. Google treats an empty message handler as a web view.
+        guard capturePasswords || pageGhost else { return }
+        if use.proxy == nil {
+            use.proxy = WeakScriptProxy(target: handler)
+        }
+        guard let proxy = use.proxy else { return }
+        if capturePasswords { addHandler(proxy, name: "lumenPassword", controller: controller, use: use) }
+        if pageGhost { addHandler(proxy, name: "lumenGhost", controller: controller, use: use) }
+    }
+
+    private static func addHandler(_ proxy: WeakScriptProxy, name: String, controller: WKUserContentController, use: ControllerUse) {
+        guard !use.handlerNames.contains(name) else { return }
+        // A copied popup controller can already contain the name. add(_:name:) raises
+        // NSException in that case, so the ObjC helper reports it instead of aborting.
+        _ = LumenAddScriptMessageHandler(controller, proxy, name)
+        use.handlerNames.insert(name)
+    }
+
+    private static func addRuleList(_ list: WKContentRuleList, to controller: WKUserContentController) {
+        let use = ControllerUses.use(for: controller)
+        guard use.ruleIDs.insert(list.identifier).inserted else { return }
+        controller.add(list)
+    }
+
+    private static func addUserScript(_ script: WKUserScript, to controller: WKUserContentController) {
+        let already = controller.userScripts.contains { existing in
+            existing.source == script.source
+                && existing.injectionTime == script.injectionTime
+                && existing.isForMainFrameOnly == script.isForMainFrameOnly
+        }
+        if already { return }
+        controller.addUserScript(script)
     }
 }
 
@@ -152,8 +193,26 @@ enum WebInspector {
     }
 }
 
-private var proxyKey: UInt8 = 0
-private var handlerNamesKey: UInt8 = 0
+private var attachedKey: UInt8 = 0
+private var controllerUseKey: UInt8 = 0
+
+private final class ControllerUse: NSObject {
+    var owners = 0
+    var handlerNames = Set<String>()
+    var ruleIDs = Set<String>()
+    var proxy: WeakScriptProxy?
+}
+
+private enum ControllerUses {
+    static func use(for controller: WKUserContentController) -> ControllerUse {
+        if let existing = objc_getAssociatedObject(controller, &controllerUseKey) as? ControllerUse {
+            return existing
+        }
+        let created = ControllerUse()
+        objc_setAssociatedObject(controller, &controllerUseKey, created, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        return created
+    }
+}
 
 final class WeakScriptProxy: NSObject, WKScriptMessageHandler {
     weak var target: WKScriptMessageHandler?

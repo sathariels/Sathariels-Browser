@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 import WebKit
 @testable import SatharielsBrowser
@@ -275,5 +276,114 @@ final class SatharielsBrowserTests: XCTestCase {
         let data = try? JSONEncoder().encode(file)
         let decoded = data.flatMap { try? JSONDecoder().decode(SessionFile.self, from: $0) }
         XCTAssertEqual(decoded, file)
+    }
+
+    @MainActor
+    func testAdoptedWindowReusesScriptHandlers() throws {
+        let session = BrowserSession(launch: WindowLaunch(index: -211, isPrivate: false))
+        defer { session.shutdown() }
+        session.navigateFocused(to: URL(string: "about:blank")!)
+        let opener = try XCTUnwrap(session.focusedTab?.webView)
+        let controller = opener.configuration.userContentController
+        let scripts = controller.userScripts.count
+        XCTAssertGreaterThan(scripts, 0)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        let popup = session.adoptExternalTab(configuration: opener.configuration)
+        XCTAssertTrue(popup.configuration.userContentController === controller)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        WebKitFactory.detach(popup)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        _ = session.adoptExternalTab(configuration: opener.configuration)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+    }
+
+    @MainActor
+    func testWindowOpenAndTargetBlankDoNotCrash() throws {
+        SettingsStore.shared.tabSleepMode = .off
+        let session = BrowserSession(launch: WindowLaunch(index: -210, isPrivate: false))
+        defer {
+            SettingsStore.shared.tabSleepMode = .smart
+            session.shutdown()
+        }
+        session.permissions.set(host: "example.com", kind: .popups, choice: .allow)
+        session.navigateFocused(to: URL(string: "about:blank")!)
+        let opener = try XCTUnwrap(session.focusedTab?.webView)
+        let script = """
+        window.open("about:blank");
+        window.open("about:blank", "sized", "width=480,height=640");
+        var link = document.createElement("a");
+        link.href = "about:blank";
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        """
+        opener.evaluateJavaScript(script, completionHandler: nil)
+        let deadline = Date().addingTimeInterval(6)
+        while Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+            if session.tabs.count >= 2 && session.popups.openCount >= 1 { break }
+        }
+        NSLog("POPUP_TEST tabs=\(session.tabs.count) popups=\(session.popups.openCount)")
+        XCTAssertGreaterThanOrEqual(session.tabs.count, 2, "window.open() or target=_blank should add a tab")
+        XCTAssertGreaterThanOrEqual(session.popups.openCount, 1, "a sized window.open should open a popup")
+        let scripts = opener.configuration.userContentController.userScripts.count
+        session.popups.closeAll()
+        XCTAssertEqual(opener.configuration.userContentController.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: opener.configuration.userContentController).contains("lumenPassword"))
+    }
+
+    func testSmartSleepLeavesRecentTabsAlone() {
+        let now = Date()
+        let active = UUID()
+        let neighbor = UUID()
+        let recent = UUID()
+        let old = UUID()
+        let pinned = UUID()
+        func input(_ id: UUID, focused: Date, count: Int, pinnedFlag: Bool = false, visible: Bool = false, neighborFlag: Bool = false) -> TabSleepInput {
+            TabSleepInput(
+                id: id, pinned: pinnedFlag, visible: visible, neighbor: neighborFlag,
+                lastFocused: focused, focusCount: count, loading: false, downloading: false,
+                capturing: false, hasWebView: true
+            )
+        }
+        let tabs = [
+            input(active, focused: now, count: 2, visible: true),
+            input(neighbor, focused: now.addingTimeInterval(-3600), count: 1, neighborFlag: true),
+            input(recent, focused: now.addingTimeInterval(-10 * 60), count: 1),
+            input(old, focused: now.addingTimeInterval(-31 * 60), count: 1),
+            input(pinned, focused: now.addingTimeInterval(-5 * 3600), count: 1, pinnedFlag: true),
+        ]
+        let quiet = TabSleepPolicy.candidates(tabs: tabs, mode: .smart, aggressiveMinutes: 2, pressure: false, critical: false, now: now)
+        XCTAssertEqual(quiet, [old])
+        let frequent = input(old, focused: now.addingTimeInterval(-31 * 60), count: 8)
+        let kept = TabSleepPolicy.candidates(
+            tabs: [input(active, focused: now, count: 1, visible: true), frequent],
+            mode: .smart, aggressiveMinutes: 2, pressure: false, critical: false, now: now
+        )
+        XCTAssertTrue(kept.isEmpty)
+        XCTAssertEqual(TabSleepPolicy.idleLimit(mode: .smart, aggressiveMinutes: 2, focusCount: 1), 30 * 60)
+        XCTAssertGreaterThan(TabSleepPolicy.idleLimit(mode: .smart, aggressiveMinutes: 2, focusCount: 8), 30 * 60)
+        let off = TabSleepPolicy.candidates(tabs: tabs, mode: .off, aggressiveMinutes: 2, pressure: false, critical: false, now: now)
+        XCTAssertTrue(off.isEmpty)
+        let pressed = TabSleepPolicy.candidates(tabs: tabs, mode: .smart, aggressiveMinutes: 2, pressure: true, critical: true, now: now)
+        XCTAssertEqual(pressed, [old, recent])
+        let aggressive = TabSleepPolicy.candidates(
+            tabs: [input(active, focused: now, count: 1, visible: true), input(recent, focused: now.addingTimeInterval(-3 * 60), count: 1)],
+            mode: .aggressive, aggressiveMinutes: 2, pressure: false, critical: false, now: now
+        )
+        XCTAssertEqual(aggressive, [recent])
+    }
+
+    func testAsuraHostsAreNotThreatListed() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
+        let hashes = ThreatList.decode(try Data(contentsOf: url))
+        for host in ["asurascans.com", "www.asurascans.com", "asuracomic.net", "www.asuracomic.net"] {
+            XCTAssertFalse(hashes.contains(ThreatList.hash64(host)), host)
+        }
     }
 }

@@ -22,7 +22,10 @@ enum ExtensionSupport {
 
     static func attach(_ configuration: WKWebViewConfiguration) {
         guard #available(macOS 15.4, *) else { return }
-        configuration.webExtensionController = ExtensionCenter.shared.controller
+        // A popup configuration already carries the opener's controller. Assigning another one is unnecessary.
+        if configuration.webExtensionController == nil {
+            configuration.webExtensionController = ExtensionCenter.shared.controller
+        }
     }
 }
 

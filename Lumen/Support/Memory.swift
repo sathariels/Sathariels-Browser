@@ -158,16 +158,27 @@ private func copyProcessName(_ pid: Int32, _ buffer: UnsafeMutablePointer<CChar>
 final class MemoryPressureCenter {
     static let shared = MemoryPressureCenter()
     private var source: DispatchSourceMemoryPressure?
+    private(set) var warning = false
+    private(set) var critical = false
+    var isUnderPressure: Bool { warning || critical }
     var onPressure: ((Bool) -> Void)?
 
     func start() {
         guard source == nil else { return }
-        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.normal, .warning, .critical], queue: .main)
         source.setEventHandler { [weak self] in
             guard let self, let source = self.source else { return }
             let event = source.data
-            let critical = event.contains(.critical)
-            self.onPressure?(critical)
+            if event.contains(.normal) {
+                self.warning = false
+                self.critical = false
+            }
+            if event.contains(.warning) { self.warning = true }
+            if event.contains(.critical) {
+                self.warning = true
+                self.critical = true
+            }
+            self.onPressure?(self.critical)
         }
         source.resume()
         self.source = source

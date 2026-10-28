@@ -17,6 +17,7 @@ final class PopupCenter: NSObject, NSWindowDelegate {
 
     weak var session: BrowserSession?
     private var boxes: [UUID: Box] = [:]
+    var openCount: Int { boxes.count }
 
     func open(configuration: WKWebViewConfiguration, features: WKWindowFeatures, capturePasswords: Bool, pageGhost: Bool = false) -> WKWebView {
         let width = features.width?.doubleValue ?? 480
