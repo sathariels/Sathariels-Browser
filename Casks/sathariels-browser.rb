@@ -1,6 +1,6 @@
 cask "sathariels-browser" do
-  version "0.6.0"
-  sha256 "d28efb6293154213328429bb39b61f359b7ca312bdbe7061a4c06ca1eddf4923"
+  version "0.6.1"
+  sha256 "02948689f5e59e9f3db164987fd8dcbf28c90054efa6113d67096441a7790548"
 
   url "https://github.com/sathariels/Sathariels-Browser/releases/download/v#{version}/Sathariels.Browser-macos.zip"
   name "Sathariels Browser"
