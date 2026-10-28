@@ -144,6 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
         startUpdaterIfSigned()
         ContentBlocker.shared.prepare()
+        ThreatList.shared.prepare()
         MemoryPressureCenter.shared.onPressure = { critical in
             SessionRegistry.shared.suspendForMemory(critical: critical)
         }

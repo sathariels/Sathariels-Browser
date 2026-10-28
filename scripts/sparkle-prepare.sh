@@ -4,9 +4,11 @@
 set -euo pipefail
 
 if [[ -z "${SPARKLE_PRIVATE_KEY:-}" ]]; then
-  echo "Add the Actions secret SPARKLE_PRIVATE_KEY before publishing." >&2
-  echo "It is the one-line base64 Ed25519 seed from Sparkle's generate_keys -x." >&2
-  exit 1
+  echo "SPARKLE_PRIVATE_KEY is not set. The updater stays dormant and this release will not be signed."
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    echo "SPARKLE_SIGNING=0" >> "$GITHUB_ENV"
+  fi
+  exit 0
 fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -82,6 +84,7 @@ echo "SUPublicEDKey length: ${#PUB}"
 
 if [[ -n "${GITHUB_ENV:-}" ]]; then
   {
+    echo "SPARKLE_SIGNING=1"
     printf 'SU_PUBLIC_ED_KEY=%s\n' "$PUB"
     printf 'SPARKLE_KEY_FILE=%s\n' "$KEY_FILE"
     printf 'SPARKLE_BIN=%s\n' "$TOOL_DIR"

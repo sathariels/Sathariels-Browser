@@ -198,6 +198,57 @@ final class SatharielsBrowserTests: XCTestCase {
         XCTAssertFalse(GoogleSignInDetector.isRejection(url: other, pageText: "may not be secure"))
     }
 
+    func testTrackingParametersAreRemoved() {
+        let url = URL(string: "https://example.com/path?q=1&utm_source=ad&fbclid=abc&gclid=g&msclkid=m&mc_eid=e&igshid=i&keep=yes")!
+        let stripped = TrackingStrip.stripped(url)
+        XCTAssertEqual(stripped?.absoluteString, "https://example.com/path?q=1&keep=yes")
+        XCTAssertNil(TrackingStrip.stripped(URL(string: "https://example.com/?q=1")!))
+        XCTAssertTrue(TrackingStrip.isTracking("utm_campaign"))
+        XCTAssertFalse(TrackingStrip.isTracking("q"))
+    }
+
+    func testHTTPSOnlySkipsLoopback() {
+        XCTAssertTrue(HTTPSOnly.isExempt(host: "localhost"))
+        XCTAssertTrue(HTTPSOnly.isExempt(host: "127.0.0.1"))
+        XCTAssertFalse(HTTPSOnly.isExempt(host: "example.com"))
+        let upgraded = HTTPSOnly.upgraded(URL(string: "http://example.com/a")!)
+        XCTAssertEqual(upgraded?.absoluteString, "https://example.com/a")
+        XCTAssertNil(HTTPSOnly.upgraded(URL(string: "http://localhost:3000/")!))
+        XCTAssertNil(HTTPSOnly.upgraded(URL(string: "https://example.com/")!))
+    }
+
+    func testFilterLinesBecomeWebKitRules() {
+        let blocked = FilterListCompiler.rules(from: "||doubleclick.net^")
+        let trigger = blocked?["trigger"] as? [String: Any]
+        XCTAssertEqual(trigger?["url-filter"] as? String, "^https?://([^/?#]*\\.)?doubleclick\\.net[:/?#]")
+        XCTAssertEqual((blocked?["action"] as? [String: Any])?["type"] as? String, "block")
+        XCTAssertNil(FilterListCompiler.rules(from: "||ads.example^$csp=script-src 'none'"))
+        let cosmetic = FilterListCompiler.rules(from: "example.com##.ad-box")
+        XCTAssertEqual((cosmetic?["action"] as? [String: Any])?["selector"] as? String, ".ad-box")
+    }
+
+    func testBundledBlockListFitsWebKitLimit() throws {
+        let urls = try XCTUnwrap(Bundle.main.urls(forResourcesWithExtension: "json", subdirectory: nil))
+        let chunks = urls.filter { $0.lastPathComponent.hasPrefix("blocker-") }
+        XCTAssertFalse(chunks.isEmpty)
+        var total = 0
+        for url in chunks {
+            let data = try Data(contentsOf: url)
+            let rules = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [Any])
+            XCTAssertLessThanOrEqual(rules.count, 150_000)
+            total += rules.count
+        }
+        XCTAssertGreaterThan(total, 10_000)
+    }
+
+    func testThreatHashFindsBundledHost() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
+        let hashes = ThreatList.decode(try Data(contentsOf: url))
+        XCTAssertFalse(hashes.isEmpty)
+        XCTAssertTrue(hashes.contains(ThreatList.hash64("02teste.cc")))
+        XCTAssertFalse(hashes.contains(ThreatList.hash64("example.com")))
+    }
+
     func testSessionRoundTrip() {
         let id = UUID()
         let snapshot = WindowSnapshot(

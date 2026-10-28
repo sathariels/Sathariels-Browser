@@ -27,8 +27,7 @@ enum WebKitFactory {
         dataStore: WKWebsiteDataStore,
         processPool: WKProcessPool,
         site: SitePermissions?,
-        ruleList: WKContentRuleList?,
-        blockingEnabled: Bool,
+        ruleLists: [WKContentRuleList],
         capturePasswords: Bool,
         pageGhost: Bool = false
     ) -> WKWebViewConfiguration {
@@ -42,7 +41,7 @@ enum WebKitFactory {
         configuration.mediaTypesRequiringUserActionForPlayback = allowsAutoplay ? [] : .all
 
         let controller = WKUserContentController()
-        if blockingEnabled, let ruleList {
+        for ruleList in ruleLists {
             controller.add(ruleList)
         }
         if let site {

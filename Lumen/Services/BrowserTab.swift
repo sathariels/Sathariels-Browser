@@ -24,6 +24,10 @@ final class BrowserTab: ObservableObject, Identifiable {
     @Published var errorText: String?
     @Published var googleBlocked = false
     @Published var passwordUsernames: [String] = []
+    @Published var pageWarning: PageWarning?
+    var httpBypass: [String] = []
+    var threatBypass: [String] = []
+    var httpsUpgradeURL: URL?
     @Published var jsonDocument: JSONDocument?
     @Published var viewport = ViewportMode()
     var lastMIME = ""
@@ -62,6 +66,7 @@ final class BrowserTab: ObservableObject, Identifiable {
     func navigate(to newURL: URL) {
         jsonLoad?.cancel()
         jsonLoad = nil
+        pageWarning = nil
         url = newURL
         if title == "New Tab" || title.isEmpty {
             title = newURL.host ?? "New Tab"
@@ -87,8 +92,7 @@ final class BrowserTab: ObservableObject, Identifiable {
             dataStore: session.dataStore,
             processPool: session.processPool,
             site: site,
-            ruleList: ContentBlocker.shared.ruleList,
-            blockingEnabled: SettingsStore.shared.contentBlocking,
+            ruleLists: ContentBlocker.shared.applicableLists(),
             capturePasswords: !session.isPrivate,
             pageGhost: SettingsStore.shared.pageFieldGhost && !session.isPrivate
         )
@@ -264,7 +268,37 @@ final class BrowserTab: ObservableObject, Identifiable {
         }
     }
 
+    func allowCurrentWarning() {
+        guard let warning = pageWarning else { return }
+        switch warning {
+        case .httpsFailed(let url):
+            remember(&httpBypass, url.absoluteString)
+            httpsUpgradeURL = nil
+            pageWarning = nil
+            navigate(to: url)
+        case .unsafe(let url):
+            remember(&threatBypass, url.absoluteString)
+            pageWarning = nil
+            if webView == nil { wake() }
+            webView?.load(URLRequest(url: url))
+        }
+    }
+
+    private func remember(_ list: inout [String], _ value: String) {
+        list.removeAll { $0 == value }
+        list.append(value)
+        if list.count > 32 { list.removeFirst(list.count - 32) }
+    }
+
     func fillPassword(username: String) {
+        guard let host = url?.host else { return }
+        PasswordUnlock.authorize(host: host) { [weak self] ok in
+            guard ok else { return }
+            self?.fillPasswordUnlocked(username: username)
+        }
+    }
+
+    private func fillPasswordUnlocked(username: String) {
         guard let host = url?.host, let webView else { return }
         guard let password = PasswordVault.password(host: host, username: username) else { return }
         webView.callAsyncJavaScript(

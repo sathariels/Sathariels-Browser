@@ -22,8 +22,14 @@
 		9B369BEAFE5F8D5B1E15CC2C /* ContentBlocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2E172077430F572EAB66BA /* ContentBlocker.swift */; };
 		2AFC2C428F628A1935C1193F /* DownloadController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/DownloadController.swift"; sourceTree = "<group>"; };
 		27070F6EBAFC5DBB28F149BB /* DownloadController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AFC2C428F628A1935C1193F /* DownloadController.swift */; };
+		C03CD11C29D2C03346905E65 /* FilterListCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/FilterListCompiler.swift"; sourceTree = "<group>"; };
+		C36AF754F5003DDAF5F717F3 /* FilterListCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03CD11C29D2C03346905E65 /* FilterListCompiler.swift */; };
 		56572FC9319103CE5BF085E4 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/HistoryStore.swift"; sourceTree = "<group>"; };
 		C65492A8541143BB5CF0FF68 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56572FC9319103CE5BF085E4 /* HistoryStore.swift */; };
+		4A6A518165CEC45E6A504B7F /* NavigationGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/NavigationGuard.swift"; sourceTree = "<group>"; };
+		7EEFFA01FB36B9426674C8A4 /* NavigationGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6A518165CEC45E6A504B7F /* NavigationGuard.swift */; };
+		DACC665535B178B17F150FB0 /* PasswordUnlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/PasswordUnlock.swift"; sourceTree = "<group>"; };
+		F5EF242C9EF311A0E562A634 /* PasswordUnlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DACC665535B178B17F150FB0 /* PasswordUnlock.swift */; };
 		BCFEE526FD9622F4EBEAE2D9 /* PermissionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/PermissionStore.swift"; sourceTree = "<group>"; };
 		085AC09D61866E9A9D45F258 /* PermissionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFEE526FD9622F4EBEAE2D9 /* PermissionStore.swift */; };
 		45DD32C1EA336A5182187FDD /* PopupCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/PopupCenter.swift"; sourceTree = "<group>"; };
@@ -34,6 +40,8 @@
 		1211513AAF67BB5112FF4671 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7049C754F0A44229273418 /* SettingsStore.swift */; };
 		3FC15C29954DDEA9364C2882 /* TabWebDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/TabWebDelegate.swift"; sourceTree = "<group>"; };
 		832A4196D94FBDEAD249669D /* TabWebDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC15C29954DDEA9364C2882 /* TabWebDelegate.swift */; };
+		068DB41A4D40D33B43906D5F /* ThreatList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ThreatList.swift"; sourceTree = "<group>"; };
+		297A76D12FAF5B26EAEF54E2 /* ThreatList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 068DB41A4D40D33B43906D5F /* ThreatList.swift */; };
 		C054EA993D8116F04838BDFD /* WebKitFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/WebKitFactory.swift"; sourceTree = "<group>"; };
 		F1EDAABBFC9DB13550D80FD9 /* WebKitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C054EA993D8116F04838BDFD /* WebKitFactory.swift */; };
 		CA23C32C7DC8BEB4BBFFCF29 /* AIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/AIProvider.swift"; sourceTree = "<group>"; };
@@ -96,6 +104,10 @@
 		1D40A5108B86EE279250E03B /* SatharielsBrowser.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SatharielsBrowser.entitlements"; sourceTree = "<group>"; };
 		FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B04B2273026590A440D27C9 /* Assets.xcassets */; };
 		5116A664840030A94246D401 /* blocker-rules.json in Resources */ = {isa = PBXBuildFile; fileRef = 4ECD08EEF314FEA38F31405F /* blocker-rules.json */; };
+		8CB2EF8DCE20B11907110038 /* blocker-0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-0.json"; sourceTree = "<group>"; };
+		A2BD1C38843DEB07133FD627 /* blocker-0.json in Resources */ = {isa = PBXBuildFile; fileRef = 8CB2EF8DCE20B11907110038 /* blocker-0.json */; };
+		9578253E46EC019F1E048548 /* threat-hashes.bin */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/threat-hashes.bin"; sourceTree = "<group>"; };
+		2F539E36B5C340815070BD34 /* threat-hashes.bin in Resources */ = {isa = PBXBuildFile; fileRef = 9578253E46EC019F1E048548 /* threat-hashes.bin */; };
 		472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SatharielsBrowserTests.swift"; sourceTree = "<group>"; };
 		8D8BA73A7BE3B6FF3B4FEF03 /* SatharielsBrowserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */; };
 		B6CDB6E5D160E013280D3C68 /* Sathariels Browser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sathariels Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -111,12 +123,16 @@
 				949AD731D22B481BCC83E266,
 				0F2E172077430F572EAB66BA,
 				2AFC2C428F628A1935C1193F,
+				C03CD11C29D2C03346905E65,
 				56572FC9319103CE5BF085E4,
+				4A6A518165CEC45E6A504B7F,
+				DACC665535B178B17F150FB0,
 				BCFEE526FD9622F4EBEAE2D9,
 				45DD32C1EA336A5182187FDD,
 				C07B443B7236DFC67B04A95A,
 				4B7049C754F0A44229273418,
 				3FC15C29954DDEA9364C2882,
+				068DB41A4D40D33B43906D5F,
 				C054EA993D8116F04838BDFD,
 				CA23C32C7DC8BEB4BBFFCF29,
 				44A5B9E65E1D10D62EFE5C2B,
@@ -148,7 +164,9 @@
 				5B04B2273026590A440D27C9,
 				4ECD08EEF314FEA38F31405F,
 				1507F021100E808DBE2FAA00,
-				1D40A5108B86EE279250E03B
+				1D40A5108B86EE279250E03B,
+				8CB2EF8DCE20B11907110038,
+				9578253E46EC019F1E048548
 			);
 			path = Lumen;
 			name = Lumen;
@@ -208,12 +226,16 @@
 				9EA10B524A44D79E9259EADB,
 				9B369BEAFE5F8D5B1E15CC2C,
 				27070F6EBAFC5DBB28F149BB,
+				C36AF754F5003DDAF5F717F3,
 				C65492A8541143BB5CF0FF68,
+				7EEFFA01FB36B9426674C8A4,
+				F5EF242C9EF311A0E562A634,
 				085AC09D61866E9A9D45F258,
 				546DD3F76B93ABC57D82ED34,
 				6318916E6D24DB7CE55173E8,
 				1211513AAF67BB5112FF4671,
 				832A4196D94FBDEAD249669D,
+				297A76D12FAF5B26EAEF54E2,
 				F1EDAABBFC9DB13550D80FD9,
 				F9FCEB01B8BFC5E1D3DD15DE,
 				3EC4E4F52B0DAC292E841ABE,
@@ -250,7 +272,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB90684E69A6C96ED866993E,
-				5116A664840030A94246D401
+				5116A664840030A94246D401,
+				A2BD1C38843DEB07133FD627,
+				2F539E36B5C340815070BD34
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

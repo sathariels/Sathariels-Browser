@@ -168,6 +168,18 @@ def write_project() -> None:
     asset_build = add("build:assets", f"""\t\t{pid("build:assets")} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {asset_ref} /* Assets.xcassets */; }};""")
     rules_build = add("build:rules", f"""\t\t{pid("build:rules")} /* blocker-rules.json in Resources */ = {{isa = PBXBuildFile; fileRef = {rules_ref} /* blocker-rules.json */; }};""")
     app_resources.extend([asset_build, rules_build])
+    extra_refs = []
+    resources_root = APP / "Resources"
+    for path in sorted(resources_root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(APP).as_posix()
+        if rel == "Resources/blocker-rules.json" or path.suffix not in {".json", ".bin"}:
+            continue
+        kind = "text.json" if path.suffix == ".json" else "file"
+        ref = file_ref(rel, kind)
+        extra_refs.append(ref)
+        app_resources.append(add(f"build:{rel}", f"""\t\t{pid(f"build:{rel}")} /* {path.name} in Resources */ = {{isa = PBXBuildFile; fileRef = {ref} /* {path.name} */; }};"""))
 
     test_builds = []
     test_refs = []
@@ -192,7 +204,7 @@ def write_project() -> None:
 \t\t\tsourceTree = "<group>";
 \t\t}};""")
 
-    app_children = [file_refs[f"ref:{path}"] for path in sources] + [asset_ref, rules_ref, info_ref, ent_ref]
+    app_children = [file_refs[f"ref:{path}"] for path in sources] + [asset_ref, rules_ref, info_ref, ent_ref] + extra_refs
     app_group = group("group:app", "Lumen", app_children, "Lumen")
     test_group = group("group:tests", "LumenTests", test_refs, "LumenTests")
     products = group("group:products", "Products", [app_product, test_product], None)
@@ -533,6 +545,10 @@ def write_project() -> None:
 
 
 if __name__ == "__main__":
-    write_icons()
-    write_rules()
-    write_project()
+    import sys
+    if "--project-only" in sys.argv:
+        write_project()
+    else:
+        write_icons()
+        write_rules()
+        write_project()

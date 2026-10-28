@@ -112,6 +112,7 @@ jobs:
           fi
 
       - name: Sign the update and write the appcast
+        if: env.SPARKLE_SIGNING == '1'
         env:
           RELEASE_TAG: ${{ steps.tag.outputs.name }}
         run: |
@@ -126,6 +127,14 @@ jobs:
             "$PWD/dist/appcast.xml"
           test -s "$PWD/dist/appcast.xml"
 
+      - name: Stage release files
+        run: |
+          mkdir -p dist/publish
+          cp "dist/Sathariels Browser-macos.zip" dist/publish/
+          cp "dist/Sathariels Browser.dmg" dist/publish/
+          if [ -f dist/appcast.xml ]; then cp dist/appcast.xml dist/publish/; fi
+          ls -lh dist/publish
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -133,10 +142,7 @@ jobs:
           name: Sathariels Browser ${{ steps.tag.outputs.name }}
           fail_on_unmatched_files: true
           generate_release_notes: true
-          files: |
-            dist/Sathariels Browser-macos.zip
-            dist/Sathariels Browser.dmg
-            dist/appcast.xml
+          files: dist/publish/*
           body: |
             Ad-hoc signed macOS build of Sathariels Browser.
 

@@ -74,6 +74,23 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             return
         }
         let scheme = url.scheme?.lowercased() ?? ""
+        let main = navigationAction.targetFrame?.isMainFrame ?? true
+        if main, scheme == "http" || scheme == "https" {
+            switch navigationChoice(for: url, action: navigationAction) {
+            case .allow:
+                tab?.pageWarning = nil
+                decisionHandler(.allow, preferences)
+            case .load(let next):
+                tab?.pageWarning = nil
+                decisionHandler(.cancel, preferences)
+                webView.load(URLRequest(url: next))
+            case .warn(let warning):
+                if case .unsafe = warning { tab?.httpsUpgradeURL = nil }
+                tab?.pageWarning = warning
+                decisionHandler(.cancel, preferences)
+            }
+            return
+        }
         switch scheme {
         case "http", "https", "about", "file", "blob", "data":
             decisionHandler(.allow, preferences)
@@ -83,6 +100,38 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             }
             decisionHandler(.cancel, preferences)
         }
+    }
+
+    private enum NavigationChoice {
+        case allow
+        case load(URL)
+        case warn(PageWarning)
+    }
+
+    private func navigationChoice(for url: URL, action: WKNavigationAction) -> NavigationChoice {
+        let method = action.request.httpMethod?.uppercased() ?? "GET"
+        guard method == "GET" || method == "HEAD" else { return .allow }
+        let settings = SettingsStore.shared
+        var current = url
+        if settings.stripTracking, let stripped = TrackingStrip.stripped(current), stripped.absoluteString != current.absoluteString {
+            return .load(stripped)
+        }
+        if settings.httpsOnly, current.scheme?.lowercased() == "http", !HTTPSOnly.isExempt(host: current.host) {
+            if tab?.httpBypass.contains(current.absoluteString) == true {
+                return .allow
+            }
+            if let pending = tab?.httpsUpgradeURL, pending.host?.lowercased() == current.host?.lowercased() {
+                return .warn(.httpsFailed(pending))
+            }
+            if let https = HTTPSOnly.upgraded(current) {
+                tab?.httpsUpgradeURL = current
+                return .load(https)
+            }
+        }
+        if settings.safeBrowsing, tab?.threatBypass.contains(current.absoluteString) != true, ThreatList.shared.contains(current) {
+            return .warn(.unsafe(current))
+        }
+        return .allow
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
@@ -115,6 +164,8 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         guard let url = webView.url, url.absoluteString != "about:blank" else { return }
+        tab?.httpsUpgradeURL = nil
+        tab?.pageWarning = nil
         tab?.url = url
         tab?.errorText = nil
         session?.persist()
@@ -319,6 +370,13 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private func note(_ error: Error) {
         let ns = error as NSError
         if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled { return }
+        if let pending = tab?.httpsUpgradeURL {
+            tab?.pageWarning = .httpsFailed(pending)
+            tab?.httpsUpgradeURL = nil
+            tab?.errorText = nil
+            tab?.isLoading = false
+            return
+        }
         tab?.errorText = ns.localizedDescription
         tab?.isLoading = false
     }

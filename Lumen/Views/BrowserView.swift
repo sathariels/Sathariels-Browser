@@ -368,7 +368,9 @@ struct PaneContent: View {
 
     var body: some View {
         Group {
-            if let document = tab.jsonDocument {
+            if let warning = tab.pageWarning {
+                PageWarningView(warning: warning) { tab.allowCurrentWarning() }
+            } else if let document = tab.jsonDocument {
                 JSONTreeView(tab: tab, document: document)
             } else if let webView = tab.webView {
                 viewportFrame(webView: webView)
@@ -407,6 +409,52 @@ struct PaneContent: View {
         } else {
             WebViewRepresentable(webView: webView)
                 .id(ObjectIdentifier(webView))
+        }
+    }
+}
+
+struct PageWarningView: View {
+    let warning: PageWarning
+    let proceed: () -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(LumenTheme.title)
+                .foregroundStyle(LumenTheme.text)
+            Text(detail)
+                .font(LumenTheme.monoSmall)
+                .foregroundStyle(LumenTheme.textDim)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
+                .frame(maxWidth: 520)
+            Button("Continue anyway", action: proceed)
+                .buttonStyle(LumenButtonStyle(tint: tint))
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var title: String {
+        switch warning {
+        case .httpsFailed: return "HTTPS is unavailable"
+        case .unsafe: return "This site looks unsafe"
+        }
+    }
+
+    private var detail: String {
+        switch warning {
+        case .httpsFailed(let url):
+            return "\(url.absoluteString) did not load over HTTPS."
+        case .unsafe(let url):
+            return "\(url.host ?? url.absoluteString) matches a local phishing or malware list. The address was not sent to a lookup service."
+        }
+    }
+
+    private var tint: Color {
+        switch warning {
+        case .httpsFailed: return LumenTheme.amber
+        case .unsafe: return LumenTheme.coral
         }
     }
 }
