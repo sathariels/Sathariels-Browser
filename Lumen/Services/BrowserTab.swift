@@ -193,14 +193,16 @@ final class BrowserTab: ObservableObject, Identifiable {
         webView = nil
     }
 
-    func insert(_ text: String) {
-        guard let webView else { return }
+    func insert(_ text: String, completion: @escaping (Bool) -> Void) {
+        guard let webView else { completion(false); return }
         webView.callAsyncJavaScript(
             PageScripts.insertText,
             arguments: ["text": text],
             in: nil,
             in: .page,
-            completionHandler: nil
+            completionHandler: { result in
+                completion((try? result.get()) as? Bool == true)
+            }
         )
     }
 

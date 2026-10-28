@@ -40,7 +40,7 @@ Unit tests (address bar, frecency, Google block detection, session coding):
 xcodebuild -project SatharielsBrowser.xcodeproj -scheme SatharielsBrowser -destination 'platform=macOS' test
 ```
 
-This tree was written on Linux, where `xcodebuild` is not available, so the compile has not been executed in this environment. Open it in Xcode on a Mac, or run the script above, before you trust a binary.
+The dark-interface redesign was built and tested on macOS with Xcode 16.1. If your checkout is in an iCloud-synced Documents folder, use `-derivedDataPath /tmp/SatharielsBrowser-Verified` to keep Finder metadata out of signed build products.
 
 ## Layout
 
@@ -56,23 +56,24 @@ This tree was written on Linux, where `xcodebuild` is not available, so the comp
 └─────────────┴──────────────────────────────┴────────────┘
 ```
 
-The chrome is dark, square, and flat (0px corner radius, 1px borders). A short set of accents marks tabs, clipboard, history, and Grok. It does not follow a light system appearance.
+The interface uses black surfaces, soft rounded controls, muted sage and gold flower details. The start page is only a centered native Canvas flower on black; the address bar is the only search field. A compact left rail opens the AI assistant, tabs/library, clipboard, and Google AI Mode. The assistant opens on the left. The flower scales to narrow panes; bookmarks scroll horizontally, selected tabs scroll into view, and side panels adapt to the window width. Browser chrome always stays dark; websites retain their own appearance.
 
-## Why it uses less RAM
+## Memory design
 
 Chrome keeps a renderer process for each tab (and often for each extension) until you close the tab. Sathariels Browser's UI is one small SwiftUI process. Web content lives in WebKit, and only while a tab is actually awake.
 
 - A new tab is a native start page. It does not create a `WKWebView` until you navigate.
 - Restored tabs are created suspended. Only the focused pane is woken.
-- After N minutes idle (10 by default), a background tab — including the split pane you are not using — drops its `WKWebView`. The tab keeps its URL, title, and favicon. Focusing it loads the page again.
+- A 12-second cleanup cycle targets at most four live web tabs per window, suspending older eligible tabs first. Loading tabs, downloads, playing media, and detected main-frame edits are exempt; these exceptions can exceed the target.
+- After N minutes idle (2 by default for new installations), a background tab — including the split pane you are not using — drops its `WKWebView`. The tab keeps its URL, title, and favicon. Focusing it loads the page again.
 - Closed tabs release the web view immediately. Nothing keeps a cache of old web views.
 - Ordinary windows share one `WKProcessPool`. Apple deprecated that type because modern WebKit already shares a process pool; setting one instance keeps the intent obvious, including on older systems. Each private window gets its own pool and a non-persistent data store, and both are released when the window closes.
 - The ad/tracker list blocks heavy third-party frames before they allocate their own DOM and scripts. It is a small list, not a full uBlock replacement.
 - There is no extension process.
-- The Grok panel, download list UI, settings sections, and clipboard thumbnails are created when you open them. Clipboard images are 48px JPEG thumbnails on disk, and only a few decoded images stay in an `NSCache`.
+- The Grok panel, download list UI, settings sections, and clipboard thumbnails are created when you open them. Clipboard images keep a full-resolution disk copy and 48px JPEG previews; only a few decoded previews stay in an `NSCache`.
 - A memory-pressure source (`DispatchSourceMemoryPressure`) suspends every tab except the focused pane, drops thumbnail cache, and trims the chat transcript.
 
-A single heavy page (Figma, a large docs tab, YouTube) will still use a lot of memory. That cost is the page. Sathariels Browser wins when many tabs are open and most of them are idle, which is the usual shape of a browsing session.
+A single heavy page (Figma, a large docs tab, YouTube) will still use a lot of memory. That cost is the page. Sleeping background tabs is intended to reduce memory when many tabs are idle; it does not guarantee lower RAM than Chrome on every site or workload.
 
 The per-tab figure is honest about its source:
 
@@ -116,8 +117,7 @@ The address bar shows the best frecency match as grey ghost text after the caret
 
 - **Tab** or **Right arrow** accepts the ghost text.
 - **Delete** dismisses the ghost and leaves what you typed.
-- **Enter** goes to the text you see, including the ghost.
-- **Enter** opens the field text, or the highlighted row.
+- **Enter** opens the highlighted suggestion, or the field text including its ghost completion.
 - The menu lists history, bookmarks, and open tabs (capped), plus a search row for the current engine.
 - Ranking is visit count times a recency weight (1 day, 7 days, 30 days, older). The lookup is a scan of a flat array capped at 1,500 history rows. It does not keep page bodies.
 - Private windows do not record visits and do not suggest history. Bookmarks and that window's open tabs still appear.
@@ -125,7 +125,7 @@ The address bar shows the best frecency match as grey ghost text after the caret
 
 Page fields have a separate opt-in. When it is on, ordinary text inputs and text areas show the same kind of grey suggestion after a short pause, and Tab inserts it. Password fields, hidden fields, and private windows are skipped. The script posts only the field label and the text you already typed. It is not installed until the setting is on, so idle tabs do not carry it.
 
-Default search is DuckDuckGo. Google and Bing are in Settings.
+New installations default to Google AI Mode. Existing saved search preferences are retained; choose Google AI Mode in Settings → General to switch. Standard Google, DuckDuckGo, and Bing remain available. AI Mode availability depends on Google and your account/region. Use the account button beside the address bar → Sign in to Google to open Google’s own sign-in page; regular windows retain its cookies.
 
 ## Google sign-in
 
@@ -200,7 +200,7 @@ The address-bar info button edits the current host. **Settings → Sites** lists
 The sidebar keeps recent clipboard items while a normal window is key. A timer watches `NSPasteboard.changeCount`.
 
 - Text and URLs, capped in length and count (60 unpinned)
-- Images stored as 48px JPEG thumbnails, not the original
+- Images up to 20 MB stored at full resolution on disk with 48px JPEG previews (older saved entries retain only their original preview)
 - Click copies the item back. **Paste** tries the focused page field, otherwise the address bar
 - Pin, delete, and **Clear** (pinned items stay)
 - Items that carry `org.nspasteboard.ConcealedType` or `org.nspasteboard.TransientType` are ignored, so password-manager copies are not stored

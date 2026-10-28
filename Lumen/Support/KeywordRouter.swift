@@ -36,19 +36,19 @@ enum KeywordRouter {
         if looksLikeRepo(query) {
             return URL(string: "https://github.com/\(query)")
         }
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
         return URL(string: "https://github.com/search?q=\(encoded)")
     }
 
     private static func youtube(_ query: String) -> URL? {
         if query.isEmpty { return URL(string: "https://www.youtube.com") }
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
         return URL(string: "https://www.youtube.com/results?search_query=\(encoded)")
     }
 
     private static func leetcode(_ query: String) -> URL? {
         if query.isEmpty { return URL(string: "https://leetcode.com/problemset/") }
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
         return URL(string: "https://leetcode.com/problemset/?search=\(encoded)")
     }
 
@@ -61,7 +61,7 @@ enum KeywordRouter {
     }
 
     private static func apply(template: String, query: String) -> URL? {
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? query
         let filled = template.replacingOccurrences(of: "{query}", with: encoded)
         if filled.hasPrefix("http://") || filled.hasPrefix("https://") {
             return URL(string: filled)

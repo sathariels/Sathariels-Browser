@@ -184,7 +184,7 @@ enum PageScripts {
     const el = document.activeElement;
     if (!el) return false;
     const typing = el.matches && el.matches('input, textarea, [contenteditable="true"], [contenteditable=""]');
-    if (!typing && !el.isContentEditable) return false;
+    if ((!typing && !el.isContentEditable) || el.disabled || el.readOnly) return false;
     if (el.isContentEditable) {
       document.execCommand('insertText', false, text);
       return true;
@@ -199,8 +199,17 @@ enum PageScripts {
     return true;
     """
 
+    // A boolean only: never captures or transmits form contents.
+    static let editedPageWatcher = """
+    (() => {
+      document.addEventListener('input', () => { window.__lumenHasEdits = true; }, {capture: true, passive: true});
+      document.addEventListener('change', () => { window.__lumenHasEdits = true; }, {capture: true, passive: true});
+    })();
+    """
+
     static let mediaPlaying = """
     (function () {
+      if (window.__lumenHasEdits) return true;
       var nodes = document.querySelectorAll('video, audio');
       for (var i = 0; i < nodes.length; i++) {
         var el = nodes[i];

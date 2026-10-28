@@ -47,7 +47,7 @@ struct BrowserRoot: View {
                     openWindow(value: WindowLaunch(index: index, isPrivate: false))
                 }
             }
-            .focusedValue(\.browserActions, BrowserActions(
+            .focusedSceneValue(\.browserActions, BrowserActions(
                 newTab: { session.newTab() },
                 closeTab: { if let id = session.focusedTab?.id { session.closeTab(id) } },
                 focusAddress: { session.focusAddress() },

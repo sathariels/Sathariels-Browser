@@ -49,7 +49,10 @@ final class ClipboardStore: ObservableObject {
         case .text, .url:
             board.setString(item.text ?? "", forType: .string)
         case .image:
-            if let image = thumbnail(for: item) {
+            let original = item.imageFile.flatMap { name in
+                (try? JSONStore.directory()).flatMap { NSImage(contentsOf: $0.appendingPathComponent("clipboard-thumbs/\(name)")) }
+            }
+            if let image = original ?? thumbnail(for: item) {
                 board.writeObjects([image])
             }
         }
@@ -109,7 +112,7 @@ final class ClipboardStore: ObservableObject {
         if let string = board.string(forType: .string) {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
-            let clipped = String(trimmed.prefix(16_000))
+            let clipped = String(string.prefix(16_000))
             if let url = URL(string: clipped), let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https", clipped.count < 2_000 {
                 push(ClipItem(id: UUID(), kind: .url, text: clipped, created: Date(), pinned: false, thumbFile: nil))
             } else {
@@ -119,20 +122,23 @@ final class ClipboardStore: ObservableObject {
     }
 
     private func storeImage(_ image: NSImage) {
-        guard let data = Self.thumbnailJPEG(image) else { return }
-        let name = UUID().uuidString + ".jpg"
+        guard let data = Self.thumbnailJPEG(image), let original = image.tiffRepresentation, original.count <= 20_000_000 else { return }
+        let id = UUID().uuidString
+        let name = id + ".jpg"
+        let originalName = id + ".tiff"
         do {
             let dir = try JSONStore.directory().appendingPathComponent("clipboard-thumbs", isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: dir.appendingPathComponent(name), options: .atomic)
-            push(ClipItem(id: UUID(), kind: .image, text: "Image", created: Date(), pinned: false, thumbFile: name))
+            try original.write(to: dir.appendingPathComponent(originalName), options: .atomic)
+            push(ClipItem(id: UUID(), kind: .image, text: "Image", created: Date(), pinned: false, thumbFile: name, imageFile: originalName))
         } catch {
             return
         }
     }
 
     private func push(_ item: ClipItem) {
-        if let text = item.text, items.first?.text == text, items.first?.kind == item.kind { return }
+        if item.kind != .image, let text = item.text, items.first?.text == text, items.first?.kind == item.kind { return }
         items.insert(item, at: 0)
         let pinned = items.filter(\.pinned)
         var loose = items.filter { !$0.pinned }
@@ -152,6 +158,9 @@ final class ClipboardStore: ObservableObject {
         guard let name = item.thumbFile,
               let url = try? JSONStore.directory().appendingPathComponent("clipboard-thumbs/\(name)") else { return }
         try? FileManager.default.removeItem(at: url)
+        if let originalName = item.imageFile {
+            try? FileManager.default.removeItem(at: url.deletingLastPathComponent().appendingPathComponent(originalName))
+        }
         cache.removeObject(forKey: name as NSString)
     }
 

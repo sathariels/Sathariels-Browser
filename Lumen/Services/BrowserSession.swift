@@ -79,6 +79,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     @Published var focusedPane: Pane = .primary
     @Published var splitFraction: CGFloat = 0.5
     @Published var sidebarVisible = false
+    @Published var clipboardOnly = false
     @Published var sidebarWidth: Double = 248
     @Published var clipboardHeight: Double = 180
     @Published var grokVisible = false
@@ -465,7 +466,12 @@ final class BrowserSession: ObservableObject, Identifiable {
             addressFocusToken += 1
             return
         }
-        focusedTab?.insert(text)
+        let targetID = focusedTab?.id
+        focusedTab?.insert(text) { [weak self] inserted in
+            guard let self, !inserted, self.focusedTab?.id == targetID else { return }
+            self.addressSeed = text
+            self.addressFocusToken += 1
+        }
     }
 
     private func restore(_ snapshot: WindowSnapshot) {
@@ -519,19 +525,22 @@ final class BrowserSession: ObservableObject, Identifiable {
         return tab
     }
 
-    private func suspendIdle() {
+    func suspendIdle() {
         let limit = TimeInterval(max(1, SettingsStore.shared.suspendMinutes) * 60)
         let focused = focusedTab?.id
-        for tab in tabs {
-            guard tab.id != focused, tab.webView != nil else { continue }
-            guard !DownloadController.shared.isDownloading(tab.id) else { continue }
-            guard Date().timeIntervalSince(tab.lastFocused) > limit else { continue }
-            let view = tab.webView
-            view?.evaluateJavaScript(PageScripts.mediaPlaying) { result, _ in
-                let playing = (result as? Bool) ?? (result as? NSNumber)?.boolValue ?? false
-                if !playing && tab.id != self.focusedTab?.id {
-                    tab.suspend()
-                }
+        let live = tabs.filter { $0.webView != nil }
+        let candidates = live.filter { $0.id != focused }.sorted { $0.lastFocused < $1.lastFocused }
+        let excess = max(0, live.count - 4)
+        for (index, tab) in candidates.enumerated() {
+            guard !tab.isLoading, !DownloadController.shared.isDownloading(tab.id) else { continue }
+            guard index < excess || Date().timeIntervalSince(tab.lastFocused) > limit else { continue }
+            guard let view = tab.webView else { continue }
+            view.evaluateJavaScript(PageScripts.mediaPlaying) { [weak self, weak tab, weak view] result, error in
+                guard let self, let tab, let view, error == nil,
+                      tab.webView === view, tab.id != self.focusedTab?.id,
+                      !tab.isLoading, !DownloadController.shared.isDownloading(tab.id) else { return }
+                let protected = (result as? Bool) ?? true
+                if !protected { tab.suspend() }
             }
         }
     }
@@ -575,9 +584,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     private func refreshMemory() {
         let live = tabs.filter { $0.webView != nil }
         let footprint = ProcessFootprint.sample()
-        if let footprint {
-            measuredWebKit = footprint.webContentBytes + footprint.helperBytes
-        }
+        measuredWebKit = footprint.map { $0.webContentBytes + $0.helperBytes } ?? 0
         if live.count == 1, let bytes = footprint?.webContentBytes, bytes > 0 {
             live[0].memory = TabMemory(bytes: bytes, kind: .measured)
             return

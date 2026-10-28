@@ -36,17 +36,28 @@ struct AddressBarView: View {
                         if tab.isLoading { tab.stop() } else { session.reloadFocused() }
                     }
                 }
+                navButton("sidebar.left", help: "Toggle sidebar", enabled: true) { session.grokVisible = false; session.sidebarVisible.toggle() }
                 omnibox
-                Button { openSettings() } label: {
-                    Image(systemName: "person")
+                Menu {
+                    Button("Sign in to Google…") {
+                        session.newTab(url: URL(string: "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fwww.google.com%2Fai"))
+                    }
+                    Button("Google account…") { session.newTab(url: URL(string: "https://myaccount.google.com")) }
+                    Divider()
+                    Button("Browser settings…") { openSettings() }
+                } label: {
+                    Image(systemName: "person.crop.circle")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(LumenTheme.profileText)
                         .frame(width: 27, height: 27)
                         .background(LumenTheme.profile)
-                        .overlay(Rectangle().strokeBorder(LumenTheme.profileBorder, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
-                .help("Settings")
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Google account and settings")
                 moreMenu
             }
             .padding(.horizontal, 9)
@@ -65,7 +76,7 @@ struct AddressBarView: View {
                 }
             }
 
-            bookmarkBar
+            if !bookmarks.bookmarks.isEmpty { bookmarkBar }
 
             if showSite, let host = tab.url?.host {
                 SitePermissionsEditor(host: host, store: session.permissions, onAutoplayChange: {
@@ -102,6 +113,12 @@ struct AddressBarView: View {
         }
         .onChange(of: tab.url) { _, _ in
             if !editing { syncFromTab() }
+        }
+        .onChange(of: tab.id) { _, _ in
+            editing = false
+            showSite = false
+            highlight = -1
+            syncFromTab()
         }
         .onAppear { syncFromTab() }
         .task(id: aiQuery) {
@@ -179,6 +196,7 @@ struct AddressBarView: View {
             )
             .frame(maxWidth: .infinity)
             .frame(height: 28)
+            .id(tab.id)
 
             Button {
                 guard let url = tab.url else { return }
@@ -193,9 +211,10 @@ struct AddressBarView: View {
             .buttonStyle(.plain)
             .help("Bookmark this page")
         }
-        .frame(height: 30)
-        .background(editing ? Color(red: 32 / 255, green: 37 / 255, blue: 34 / 255) : LumenTheme.omnibox)
-        .overlay(Rectangle().strokeBorder(editing ? LumenTheme.omniboxFocus : LumenTheme.omniboxBorder, lineWidth: 1))
+        .frame(height: 34)
+        .background(editing ? LumenTheme.field : LumenTheme.omnibox)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(editing ? LumenTheme.omniboxFocus : LumenTheme.omniboxBorder, lineWidth: 1))
     }
 
     private var suggestionList: some View {
@@ -231,7 +250,9 @@ struct AddressBarView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(LumenTheme.omnibox)
-        .overlay(Rectangle().strokeBorder(LumenTheme.omniboxBorder, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(LumenTheme.omniboxBorder, lineWidth: 1))
+        .shadow(color: .black.opacity(0.3), radius: 12, y: 5)
     }
 
     private var moreMenu: some View {
@@ -354,23 +375,16 @@ struct AddressBarView: View {
     }
 
     private var bookmarkBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 4) {
-            bookmarkChip("square.grid.2x2", title: "Apps") { openLibrary() }
-            Rectangle().fill(LumenTheme.ink.opacity(0.15)).frame(width: 1, height: 17)
-            if bookmarks.bookmarks.isEmpty {
-                bookmarkChip(nil, title: "Mail") { open(urlString: "https://mail.google.com") }
-                bookmarkChip(nil, title: "Maps") { open(urlString: "https://maps.google.com") }
-                bookmarkChip(nil, title: "News") { open(urlString: "https://news.google.com") }
-                bookmarkChip(nil, title: "Workspace") { open(urlString: "https://github.com") }
-            } else {
-                ForEach(bookmarks.bookmarks.prefix(6)) { mark in
-                    bookmarkChip(nil, title: mark.title) { open(urlString: mark.url) }
-                }
+            ForEach(bookmarks.bookmarks.prefix(12)) { mark in
+                bookmarkChip(nil, title: mark.title) { open(urlString: mark.url) }
             }
             Spacer(minLength: 8)
             bookmarkChip("folder", title: "All bookmarks") { openLibrary() }
         }
         .padding(.horizontal, 14)
+        }
         .frame(height: 31)
         .background(LumenTheme.bookmarkBar)
         .overlay(alignment: .bottom) { Rectangle().fill(LumenTheme.ink.opacity(0.12)).frame(height: 1) }
@@ -435,9 +449,12 @@ struct OmniboxField: NSViewRepresentable {
                 .foregroundColor: NSColor(srgbRed: 152 / 255, green: 163 / 255, blue: 156 / 255, alpha: 1)
             ]
         )
-        let editorActive = view.field.currentEditor() != nil
-        if !editorActive, view.field.stringValue != prefix {
+        if view.field.stringValue != prefix {
             view.field.stringValue = prefix
+            if let editor = view.field.currentEditor() as? NSTextView {
+                editor.string = prefix
+                editor.setSelectedRange(NSRange(location: (prefix as NSString).length, length: 0))
+            }
         }
         view.suffix = ghostSuffix
         if context.coordinator.lastFocus != focusToken {
@@ -508,6 +525,7 @@ struct OmniboxField: NSViewRepresentable {
             let next = control.stringValue + parent.ghostSuffix
             applying = true
             control.stringValue = next
+            textView.string = next
             textView.setSelectedRange(NSRange(location: (next as NSString).length, length: 0))
             applying = false
             view?.suffix = ""
@@ -536,7 +554,7 @@ final class GhostFieldView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = NSColor(srgbRed: 37 / 255, green: 42 / 255, blue: 39 / 255, alpha: 1).cgColor
+        layer?.backgroundColor = NSColor.clear.cgColor
         field.isBordered = false
         field.isBezeled = false
         field.drawsBackground = false
@@ -586,8 +604,9 @@ final class GhostFieldView: NSView {
     }
 
     private func fitFields() {
-        field.frame = bounds
-        ghost.frame = bounds
+        let rect = NSRect(x: 0, y: max(0, (bounds.height - 18) / 2), width: bounds.width, height: 18)
+        field.frame = rect
+        ghost.frame = rect
     }
 
     func focusForCommand() {

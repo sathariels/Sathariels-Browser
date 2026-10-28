@@ -133,6 +133,7 @@ struct ClipItem: Codable, Identifiable, Equatable {
     var created: Date
     var pinned: Bool
     var thumbFile: String?
+    var imageFile: String? = nil
 }
 
 struct AIMessage: Codable, Equatable, Identifiable {

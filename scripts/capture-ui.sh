@@ -4,7 +4,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${1:-$ROOT/build/DerivedData/Build/Products/Release/Sathariels Browser.app}"
+DERIVED="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/SatharielsBrowser-build}"
+APP="${1:-$DERIVED/Build/Products/Release/Sathariels Browser.app}"
 OUT="${2:-$ROOT/dist/screenshots}"
 mkdir -p "$OUT"
 

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct GrokPanel: View {
+    @Environment(\.openSettings) private var openSettings
+    @AppStorage("settingsSection") private var settingsSection = "General"
     @ObservedObject var session: BrowserSession
     @ObservedObject var chat: ChatStore
 
@@ -15,13 +17,24 @@ struct GrokPanel: View {
                 }
                 Button("Clear") { chat.clear() }
                     .buttonStyle(LumenButtonStyle(tint: LumenTheme.textDim))
-                    .padding(.trailing, 8)
+                Button { session.toggleGrok() } label: { Image(systemName: "xmark") }
+                    .buttonStyle(.plain).help("Close AI assistant")
+                    .padding(.trailing, 10)
             }
             if session.isPrivate {
                 Text(SettingsStore.shared.agentInPrivate ? "Private window. Agent actions are allowed." : "Private window. The agent is off unless you enable it in Settings.")
                     .font(LumenTheme.micro)
                     .foregroundStyle(LumenTheme.coral)
                     .padding(.horizontal, 8)
+            }
+            if !APIKeyStore.isSet {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Connect your AI agent").font(LumenTheme.title)
+                    Text("Add an xAI API key in Settings to chat and use page actions. Your key stays in the macOS Keychain.")
+                        .font(LumenTheme.monoSmall).foregroundStyle(LumenTheme.textDim)
+                    Button("Connect xAI…") { settingsSection = "Grok"; openSettings() }
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
+                }.padding(12)
             }
             providerRow
             if chat.provider.isStub {
@@ -32,7 +45,7 @@ struct GrokPanel: View {
             }
         }
         .background(LumenTheme.bg)
-        .overlay(Rectangle().strokeBorder(LumenTheme.violet.opacity(0.5), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(LumenTheme.violet.opacity(0.5), lineWidth: 1))
     }
 
     private var providerRow: some View {
@@ -85,7 +98,7 @@ struct GrokPanel: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(6)
-                    .overlay(Rectangle().strokeBorder((message.role == .user ? LumenTheme.amber : (step ? LumenTheme.teal : LumenTheme.violet)).opacity(0.7), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder((message.role == .user ? LumenTheme.amber : (step ? LumenTheme.teal : LumenTheme.violet)).opacity(0.25), lineWidth: 1))
                 }
                 if let error = chat.errorText {
                     Text(error)
@@ -135,7 +148,7 @@ struct GrokPanel: View {
                     }
                 }
                 .padding(6)
-                .overlay(Rectangle().strokeBorder(LumenTheme.coral, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(LumenTheme.coral, lineWidth: 1))
             }
             TextField("Ask Grok", text: $chat.draft, axis: .vertical)
                 .textFieldStyle(.plain)
@@ -144,7 +157,7 @@ struct GrokPanel: View {
                 .lineLimit(2...5)
                 .padding(6)
                 .background(LumenTheme.field)
-                .overlay(Rectangle().strokeBorder(LumenTheme.border, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(LumenTheme.border, lineWidth: 1))
             HStack {
                 Button(chat.sending ? "Stop" : "Send") {
                     if chat.sending {

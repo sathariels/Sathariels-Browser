@@ -22,10 +22,10 @@ final class SettingsStore: ObservableObject {
     private var ready = false
 
     private init() {
-        let engine = defaults.string(forKey: "searchEngine").flatMap(SearchEngine.init(rawValue:)) ?? .duckDuckGo
+        let engine = defaults.string(forKey: "searchEngine").flatMap(SearchEngine.init(rawValue:)) ?? .googleAI
         searchEngine = engine
         let minutes = defaults.integer(forKey: "suspendMinutes")
-        suspendMinutes = minutes == 0 ? 10 : min(180, max(1, minutes))
+        suspendMinutes = minutes == 0 ? 2 : min(180, max(1, minutes))
         if defaults.object(forKey: "contentBlocking") == nil {
             contentBlocking = true
         } else {
@@ -41,7 +41,7 @@ final class SettingsStore: ObservableObject {
         } else {
             clipboardCapture = defaults.bool(forKey: "clipboardCapture")
         }
-        homePage = defaults.string(forKey: "homePage") ?? "https://duckduckgo.com"
+        homePage = defaults.string(forKey: "homePage") ?? "https://www.google.com/ai"
         let model = defaults.string(forKey: "grokModel") ?? ""
         grokModel = model.isEmpty ? "grok-4.7" : model
         let bot = defaults.string(forKey: "grokBotURL") ?? ""

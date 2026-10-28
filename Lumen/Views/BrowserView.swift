@@ -4,6 +4,7 @@ import WebKit
 
 struct BrowserView: View {
     @ObservedObject var session: BrowserSession
+    @ObservedObject private var bookmarks = BookmarkStore.shared
     @State private var sidebarOrigin: Double?
     @State private var grokOrigin: Double?
     @State private var splitOrigin: CGFloat?
@@ -16,32 +17,35 @@ struct BrowserView: View {
             TabStrip(session: session)
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 76)
+                    Color.clear.frame(height: bookmarks.bookmarks.isEmpty ? 45 : 76)
                     if session.viewportOpen, let tab = session.focusedTab {
                         ViewportBar(tab: tab)
                     }
                     if session.findVisible { FindBar(session: session) }
                     BannerHost(session: session)
+                    GeometryReader { workspace in
                     HStack(spacing: 0) {
-                        if session.sidebarVisible {
+                        BrowserRail(session: session)
+                        if session.grokVisible, let chat = session.chatStore {
+                            GrokPanel(session: session, chat: chat)
+                                .frame(width: min(session.grokWidth, max(280, workspace.size.width * 0.30)))
+                            dragHandle(width: false)
+                        } else if session.sidebarVisible {
                             SidebarView(session: session)
-                                .frame(width: session.sidebarWidth)
+                                .frame(width: min(session.sidebarWidth, max(200, workspace.size.width * 0.24)))
                             dragHandle(width: true)
                         }
                         ZStack(alignment: .topTrailing) {
                             split
                             if session.downloadsVisible {
                                 DownloadsPanel()
-                                    .frame(width: 420, height: 240)
+                                    .frame(width: min(420, max(220, workspace.size.width * 0.48)), height: 240)
                                     .padding(8)
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        if session.grokVisible, let chat = session.chatStore {
-                            dragHandle(width: false)
-                            GrokPanel(session: session, chat: chat)
-                                .frame(width: session.grokWidth)
-                        }
+
+                    }
                     }
                     StatusBar(session: session)
                 }
@@ -52,6 +56,7 @@ struct BrowserView: View {
             }
         }
         .background(LumenTheme.bg)
+        .ignoresSafeArea(.container, edges: .top)
         .preferredColorScheme(.dark)
         .frame(minWidth: 860, minHeight: 520)
         .background(KeyWindowProbe(session: session))
@@ -67,7 +72,7 @@ struct BrowserView: View {
 
     private func dragHandle(width: Bool) -> some View {
         Rectangle()
-            .fill(LumenTheme.border)
+            .fill(LumenTheme.border.opacity(0.5))
             .frame(width: 4)
             .gesture(
                 DragGesture(minimumDistance: 1)
@@ -77,7 +82,7 @@ struct BrowserView: View {
                             session.sidebarWidth = min(420, max(200, (sidebarOrigin ?? 248) + value.translation.width))
                         } else {
                             if grokOrigin == nil { grokOrigin = session.grokWidth }
-                            session.grokWidth = min(520, max(260, (grokOrigin ?? 320) - value.translation.width))
+                            session.grokWidth = min(520, max(260, (grokOrigin ?? 320) + value.translation.width))
                         }
                     }
                     .onEnded { _ in
@@ -92,7 +97,7 @@ struct BrowserView: View {
         GeometryReader { geo in
             HStack(spacing: 0) {
                 pane(.primary)
-                    .frame(width: session.isSplit ? geo.size.width * session.splitFraction : nil)
+                    .frame(width: session.isSplit ? max(0, geo.size.width - 4) * session.splitFraction : nil)
                 if session.isSplit {
                     Rectangle()
                         .fill(LumenTheme.border)
@@ -123,7 +128,7 @@ struct BrowserView: View {
                 PaneContent(session: session, tab: tab)
             }
             Rectangle()
-                .fill(session.focusedPane == pane ? LumenTheme.tabColor(session.tab(id)?.colorIndex ?? 0) : Color.clear)
+                .fill(session.isSplit && session.focusedPane == pane ? LumenTheme.tabColor(session.tab(id)?.colorIndex ?? 0) : Color.clear)
                 .frame(height: 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -138,10 +143,11 @@ struct TabStrip: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            ScrollViewReader { scroll in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
+                HStack(spacing: 6) {
                     ForEach(session.tabs) { tab in
-                        TabChip(session: session, tab: tab)
+                        TabChip(session: session, tab: tab).id(tab.id)
                     }
                     Button {
                         session.newTab()
@@ -155,6 +161,10 @@ struct TabStrip: View {
                     .help("New tab")
                 }
                 .padding(.leading, 4)
+            }
+            .onChange(of: session.focusedTab?.id) { _, id in
+                if let id { scroll.scrollTo(id, anchor: .center) }
+            }
             }
             if session.isPrivate {
                 Text("PRIVATE")
@@ -218,13 +228,14 @@ struct TabChip: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(width: 220, height: 32)
-        .background(active ? LumenTheme.toolbar : LumenTheme.tabIdle)
+        .frame(width: 190, height: 32)
+        .background(active ? LumenTheme.toolbar : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 9))
         .overlay(alignment: .top) {
-            Rectangle().fill(active ? LumenTheme.accent : Color.clear).frame(height: 2)
+            Capsule().fill(active ? LumenTheme.accent : Color.clear).frame(width: 32, height: 2)
         }
         .overlay(alignment: .trailing) {
-            Rectangle().fill(LumenTheme.tabLine).frame(width: 1)
+            Color.clear.frame(width: 1)
         }
         .contentShape(Rectangle())
         .onHover { hover = $0 }
@@ -251,12 +262,12 @@ struct WindowDrag: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = DragView()
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor(srgbRed: 29 / 255, green: 34 / 255, blue: 31 / 255, alpha: 1).cgColor
+        view.layer?.backgroundColor = LumenTheme.windowBackground.cgColor
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        nsView.layer?.backgroundColor = NSColor(srgbRed: 29 / 255, green: 34 / 255, blue: 31 / 255, alpha: 1).cgColor
+        nsView.layer?.backgroundColor = LumenTheme.windowBackground.cgColor
     }
 
     final class DragView: NSView {
@@ -642,7 +653,7 @@ struct StatusBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(session.focusedTab?.url?.host ?? (session.isPrivate ? "private" : "lumen"))
+            Text(session.focusedTab?.url?.host ?? (session.isPrivate ? "private" : "sathariels"))
                 .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.textDim)
             Spacer()
             let asleep = session.tabs.filter { $0.lifecycle == .suspended }.count

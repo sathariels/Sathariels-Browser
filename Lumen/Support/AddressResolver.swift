@@ -1,6 +1,7 @@
 import Foundation
 
 enum SearchEngine: String, Codable, CaseIterable, Identifiable {
+    case googleAI
     case duckDuckGo
     case google
     case bing
@@ -9,6 +10,7 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
+        case .googleAI: return "Google AI Mode"
         case .duckDuckGo: return "DuckDuckGo"
         case .google: return "Google"
         case .bing: return "Bing"
@@ -16,15 +18,18 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
     }
 
     func searchURL(for query: String) -> URL? {
-        let allowed = CharacterSet.urlQueryAllowed
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: allowed) ?? query
-        let template: String
+        let base: String
         switch self {
-        case .duckDuckGo: template = "https://duckduckgo.com/?q=\(encoded)"
-        case .google: template = "https://www.google.com/search?q=\(encoded)"
-        case .bing: template = "https://www.bing.com/search?q=\(encoded)"
+        case .duckDuckGo: base = "https://duckduckgo.com/"
+        case .googleAI, .google: base = "https://www.google.com/search"
+        case .bing: base = "https://www.bing.com/search"
         }
-        return URL(string: template)
+        var components = URLComponents(string: base)!
+        components.queryItems = [URLQueryItem(name: "q", value: query)]
+        if self == .googleAI { components.queryItems?.append(URLQueryItem(name: "udm", value: "50")) }
+        // '+' is interpreted as a space by form-style search endpoints.
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        return components.url
     }
 }
 
@@ -51,33 +56,30 @@ enum AddressResolver {
         }
 
         if looksLikeHost(text) {
-            return URL(string: "https://\(text)")
+            let host = URLComponents(string: "http://\(text)")?.host?.lowercased() ?? ""
+            let local = host == "localhost" || host.hasSuffix(".localhost") || host == "127.0.0.1" || host == "[::1]"
+            return URL(string: "\(local ? "http" : "https")://\(text)")
         }
         return engine.searchURL(for: text)
     }
 
     static func looksLikeHost(_ text: String) -> Bool {
-        let lower = text.lowercased()
-        if lower.hasPrefix("localhost") { return true }
-        if lower.contains(":") && !lower.contains(" ") {
-            // host:port
-            let host = lower.split(separator: ":").first.map(String.init) ?? lower
-            if host == "localhost" || isIP(host) { return true }
-        }
-        if isIP(lower) { return true }
-        // A dotted host with a letter or number on each side, no spaces.
-        guard lower.contains(".") else { return false }
-        let host = lower.split(separator: "/").first.map(String.init) ?? lower
-        let labels = host.split(separator: ".")
+        guard let components = URLComponents(string: "https://\(text)"),
+              let host = components.host?.lowercased(), !host.isEmpty,
+              components.user == nil, components.password == nil else { return false }
+        if host == "localhost" || host.hasSuffix(".localhost") || host == "[::1]" { return true }
+        if isIP(host) { return true }
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
         guard labels.count >= 2 else { return false }
         return labels.allSatisfy { part in
-            !part.isEmpty && part.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" }
+            !part.isEmpty && part.first != "-" && part.last != "-" &&
+            part.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" }
         }
     }
 
     private static func isIP(_ host: String) -> Bool {
         let parts = host.split(separator: ".")
         guard parts.count == 4 else { return false }
-        return parts.allSatisfy { Int($0) != nil }
+        return parts.allSatisfy { Int($0).map { (0...255).contains($0) } ?? false }
     }
 }

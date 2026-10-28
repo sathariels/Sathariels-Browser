@@ -66,7 +66,8 @@ final class ContentBlocker: ObservableObject {
         guard let store = await WKContentRuleListStore.default() else {
             throw CocoaError(.coderInvalidValue)
         }
-        if let existing = try await store.contentRuleList(forIdentifier: identifier) {
+        // A cache miss throws on WebKit; it must fall through to compilation.
+        if let existing = try? await store.contentRuleList(forIdentifier: identifier) {
             return existing
         }
         guard let compiled = try await store.compileContentRuleList(

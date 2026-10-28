@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 struct SidebarView: View {
+    @AppStorage("settingsSection") private var settingsSection = "General"
+    @Environment(\.openSettings) private var openSettings
     @ObservedObject var session: BrowserSession
     @ObservedObject private var clipboard = ClipboardStore.shared
     @ObservedObject private var bookmarks = BookmarkStore.shared
@@ -11,12 +13,14 @@ struct SidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            paneSwitcher
-            upper
-            Rectangle().fill(LumenTheme.teal.opacity(0.8)).frame(height: 1)
+            if !session.clipboardOnly {
+                paneSwitcher
+                upper
+            }
+            Rectangle().fill(LumenTheme.border).frame(height: 1)
             SectionLabel(title: "Clipboard", color: LumenTheme.teal)
             clipboardList
-                .frame(height: session.clipboardHeight)
+                .frame(minHeight: 120, maxHeight: session.clipboardOnly ? .infinity : session.clipboardHeight)
             footer
         }
         .background(LumenTheme.bgRaised)
@@ -39,7 +43,7 @@ struct SidebarView: View {
     private var paneSwitcher: some View {
         HStack(spacing: 4) {
             switcher("Tabs", .tabs, LumenTheme.amber)
-            switcher("Marks", .bookmarks, LumenTheme.lime)
+            switcher("Saved", .bookmarks, LumenTheme.lime)
             switcher("History", .history, LumenTheme.sky)
         }
         .padding(.horizontal, 8)
@@ -97,6 +101,7 @@ struct SidebarView: View {
             }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
+                    if clipboard.items.isEmpty { emptyLine("Copied text and links appear here. Pin what you want to keep.") }
                     ForEach(clipboard.items) { item in
                         ClipboardRow(item: item, session: session)
                     }
@@ -116,14 +121,16 @@ struct SidebarView: View {
     }
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button("Grok Bot") { session.openGrokBot(sendPage: false) }
-                .buttonStyle(LumenButtonStyle(tint: LumenTheme.violet))
-            Button("Send page to bot") { session.openGrokBot(sendPage: true) }
-                .buttonStyle(LumenButtonStyle(tint: LumenTheme.teal))
+        HStack {
+            Button { openSettings() } label: { Label("Settings", systemImage: "slider.horizontal.3") }
+            Spacer()
+            Button { session.openGrokBot(sendPage: false) } label: { Image(systemName: "arrow.up.forward.app") }
+                .help("Open Grok Bot")
         }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
+        .font(LumenTheme.monoSmall)
+        .foregroundStyle(LumenTheme.textDim)
+        .padding(12)
     }
 
     private func switcher(_ title: String, _ pane: UpperPane, _ color: Color) -> some View {
@@ -156,7 +163,7 @@ struct SidebarView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 7)
     }
 }
 
@@ -241,8 +248,8 @@ struct TabRow: View {
             .help("Close tab")
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .background(active ? color.opacity(0.16) : Color.clear)
+        .padding(.vertical, 7)
+        .background(active ? LumenTheme.accent.opacity(0.08) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { session.select(tab.id) }
         .contextMenu {
@@ -315,5 +322,58 @@ struct ClipboardRow: View {
             }
             Button("Delete") { store.delete(item.id) }
         }
+    }
+}
+
+
+struct BrowserRail: View {
+    @ObservedObject var session: BrowserSession
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        VStack(spacing: 10) {
+            railButton("sparkles", "AI assistant", active: session.grokVisible) { session.toggleGrok() }
+            railButton("rectangle.on.rectangle", "Tabs and library", active: session.sidebarVisible && !session.grokVisible && !session.clipboardOnly) {
+                let wasTabs = session.sidebarVisible && !session.grokVisible && !session.clipboardOnly
+                session.grokVisible = false
+                session.clipboardOnly = false
+                session.sidebarVisible = !wasTabs
+            }
+            railButton("doc.on.clipboard", "Clipboard history", active: session.sidebarVisible && !session.grokVisible && session.clipboardOnly) {
+                let wasClipboard = session.sidebarVisible && !session.grokVisible && session.clipboardOnly
+                session.grokVisible = false
+                session.clipboardOnly = true
+                session.sidebarVisible = !wasClipboard
+            }
+            railButton("globe", "Google AI Mode", active: false) {
+                session.newTab(url: URL(string: "https://www.google.com/ai"))
+            }
+            railButton("xmark", "X · x.com", active: false) {
+                session.newTab(url: URL(string: "https://x.com"))
+            }
+            railButton("graduationcap", "Canvas · University of Wisconsin", active: false) {
+                session.newTab(url: URL(string: "https://canvas.wisc.edu/"))
+            }
+            Spacer(minLength: 12)
+            railButton("gearshape", "Settings", active: false) { openSettings() }
+        }
+        .padding(.vertical, 12)
+        .frame(width: 48)
+        .frame(maxHeight: .infinity)
+        .background(LumenTheme.bg)
+        .overlay(alignment: .trailing) { Rectangle().fill(LumenTheme.border).frame(width: 1) }
+    }
+
+    private func railButton(_ icon: String, _ title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(active ? LumenTheme.text : LumenTheme.textDim)
+                .frame(width: 36, height: 36)
+                .background(active ? Color.white.opacity(0.09) : .clear, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .help(title)
+        .accessibilityLabel(title)
     }
 }

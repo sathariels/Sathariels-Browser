@@ -8,7 +8,8 @@ cd "$ROOT"
 
 APP_NAME="Sathariels Browser"
 DIST="$ROOT/dist"
-DERIVED="$ROOT/build/DerivedData"
+# Keep signed intermediates out of iCloud-managed Documents folders.
+DERIVED="${DERIVED_DATA_PATH:-${TMPDIR:-/tmp}/SatharielsBrowser-build}"
 mkdir -p "$DIST"
 
 echo "Building ${APP_NAME} (Release)…"
@@ -35,6 +36,8 @@ fi
 rm -rf "$DIST/${APP_NAME}.app"
 cp -R "$APP_SRC" "$DIST/${APP_NAME}.app"
 
+# Finder metadata on copied bundles is rejected by codesign.
+xattr -cr "$DIST/${APP_NAME}.app"
 echo "Ad-hoc signing…"
 codesign --force --sign - \
   --entitlements "$ROOT/Lumen/SatharielsBrowser.entitlements" \

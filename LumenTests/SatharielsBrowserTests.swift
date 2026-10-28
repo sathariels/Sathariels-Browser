@@ -1,15 +1,112 @@
 import XCTest
+import WebKit
 @testable import SatharielsBrowser
 
 final class SatharielsBrowserTests: XCTestCase {
+    @MainActor
+    func testBundledContentRulesCompile() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "blocker-rules", withExtension: "json"))
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let store = try XCTUnwrap(WKContentRuleListStore.default())
+        let identifier = "sathariels.test.\(UUID().uuidString)"
+        let rules = try await store.compileContentRuleList(forIdentifier: identifier, encodedContentRuleList: source)
+        XCTAssertNotNil(rules)
+        try await store.removeContentRuleList(forIdentifier: identifier)
+    }
+
+    func testClipboardMigrationAndOriginalImage() throws {
+        let item = ClipItem(id: UUID(), kind: .image, text: "Image", created: Date(), pinned: true,
+                            thumbFile: "preview.jpg", imageFile: "original.tiff")
+        let encoded = try JSONEncoder().encode(item)
+        XCTAssertEqual(try JSONDecoder().decode(ClipItem.self, from: encoded), item)
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        legacy.removeValue(forKey: "imageFile")
+        let restored = try JSONDecoder().decode(ClipItem.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(restored.imageFile)
+        XCTAssertEqual(restored.thumbFile, "preview.jpg")
+        XCTAssertTrue(restored.pinned)
+    }
+
+    @MainActor
+    func testManyNewTabsAllocateNoWebViews() {
+        let session = BrowserSession(launch: WindowLaunch(index: -100, isPrivate: true))
+        defer { session.shutdown() }
+        for _ in 0..<50 { session.newTab() }
+        XCTAssertEqual(session.tabs.count, 51)
+        XCTAssertTrue(session.tabs.allSatisfy { $0.webView == nil && $0.lifecycle == .empty })
+        XCTAssertNil(session.chatStore, "AI must remain lazy until requested")
+    }
+
+    @MainActor
+    func testSleepingTabReleasesWebViewAndWakesOnSelection() {
+        let session = BrowserSession(launch: WindowLaunch(index: -101, isPrivate: true))
+        defer { session.shutdown() }
+        session.newTab(url: URL(string: "about:blank"))
+        let tab = session.focusedTab!
+        XCTAssertNotNil(tab.webView)
+        tab.suspend()
+        XCTAssertNil(tab.webView)
+        XCTAssertEqual(tab.lifecycle, .suspended)
+        session.select(tab.id)
+        XCTAssertNotNil(tab.webView)
+        session.newTab()
+        session.closeTab(tab.id)
+        XCTAssertNil(tab.webView)
+    }
+
+    @MainActor
+    func testBackgroundTabBudgetProtectsEdits() async throws {
+        let session = BrowserSession(launch: WindowLaunch(index: -102, isPrivate: true))
+        defer { session.shutdown() }
+        for _ in 0..<7 { session.newTab(url: URL(string: "about:blank")) }
+        for _ in 0..<100 {
+            if session.tabs.allSatisfy({ !$0.isLoading }) { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let protected = session.tabs.first(where: { $0.webView != nil })!
+        try await protected.webView!.evaluateJavaScript("window.__lumenHasEdits = true")
+        protected.lastFocused = .distantPast
+        session.suspendIdle()
+        for _ in 0..<50 {
+            if session.tabs.filter({ $0.webView != nil }).count <= 5 { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertNotNil(protected.webView, "Edited pages must survive routine cleanup")
+        XCTAssertNotNil(session.focusedTab?.webView)
+        // One protected old tab can exceed the soft four-tab target.
+        XCTAssertLessThanOrEqual(session.tabs.filter { $0.webView != nil }.count, 5)
+        XCTAssertTrue(session.tabs.contains { $0.lifecycle == .suspended })
+    }
+
     func testSearchVersusHost() {
         let search = AddressResolver.resolve("lumen browser", engine: .duckDuckGo)
         XCTAssertEqual(search?.host, "duckduckgo.com")
         let host = AddressResolver.resolve("asurascans.com", engine: .duckDuckGo)
         XCTAssertEqual(host?.absoluteString, "https://asurascans.com")
         let localhost = AddressResolver.resolve("localhost:3000", engine: .google)
-        XCTAssertEqual(localhost?.absoluteString, "https://localhost:3000")
+        XCTAssertEqual(localhost?.absoluteString, "http://localhost:3000")
         XCTAssertNil(AddressResolver.resolve("   ", engine: .bing))
+    }
+
+    func testSearchPreservesReservedCharacters() {
+        for engine in SearchEngine.allCases {
+            let query = "C++ & Swift #examples? café"
+            let url = engine.searchURL(for: query)!
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+            XCTAssertEqual(components.queryItems?.first(where: { $0.name == "q" })?.value, query)
+            XCTAssertEqual(components.queryItems?.first(where: { $0.name == "udm" })?.value, engine == .googleAI ? "50" : nil)
+            XCTAssertNil(components.fragment)
+            XCTAssertTrue(url.absoluteString.contains("%2B%2B"))
+        }
+    }
+
+    func testDevelopmentAddresses() {
+        for input in ["localhost:5173/app", "127.0.0.1:8080/test", "[::1]:3000"] {
+            XCTAssertEqual(AddressResolver.resolve(input, engine: .google)?.scheme, "http")
+        }
+        XCTAssertEqual(AddressResolver.resolve("example.com:8443/path?q=one", engine: .google)?.host, "example.com")
+        XCTAssertEqual(AddressResolver.resolve("localhosting", engine: .google)?.host, "www.google.com")
+        XCTAssertEqual(AddressResolver.resolve("https://localhost:3000", engine: .google)?.scheme, "https")
     }
 
     func testInlineCompletionPicksFrecency() {

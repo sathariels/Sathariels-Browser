@@ -54,6 +54,11 @@ enum WebKitFactory {
             controller.addUserScript(permissions)
         }
         controller.addUserScript(WKUserScript(
+            source: PageScripts.editedPageWatcher,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        ))
+        controller.addUserScript(WKUserScript(
             source: PageScripts.findEngine,
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: true

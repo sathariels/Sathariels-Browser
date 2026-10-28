@@ -5,7 +5,7 @@ struct SettingsView: View {
     @ObservedObject private var settings = SettingsStore.shared
     @ObservedObject private var permissions = PermissionStore.shared
     @ObservedObject private var blocker = ContentBlocker.shared
-    @State private var section = "General"
+    @AppStorage("settingsSection") private var section = "General"
     @State private var keyDraft = ""
     @State private var keyStatus = APIKeyStore.isSet ? "Saved in the Keychain" : "Not set"
     @State private var accounts: [PasswordVault.Account] = []
@@ -87,7 +87,7 @@ struct SettingsView: View {
                     .font(LumenTheme.monoSmall)
                     .foregroundStyle(LumenTheme.text)
             }
-            Text("Background tabs, including the split pane you are not using, drop their WKWebView after they sit idle. A memory warning suspends everything except the focused pane. New tabs stay native until you navigate.")
+            Text("Keeps a target of four live web tabs per window. Older background tabs sleep after the idle timeout or when over this target. Playing media, downloads, loading pages, and detected page edits are protected during normal cleanup. New tabs use no web renderer. Memory-pressure cleanup may discard background state.")
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.textDim)
         }
