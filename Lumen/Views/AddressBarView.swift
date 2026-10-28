@@ -78,12 +78,10 @@ struct AddressBarView: View {
                     Button { updates.showSheet = true } label: {
                         Text("Update")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(LumenTheme.activeText)
+                            .foregroundStyle(LumenTheme.accentOn)
                             .frame(width: 64, height: 28)
-                            .background(LumenTheme.omnibox)
-                            .overlay(Rectangle().strokeBorder(LumenTheme.accent, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AccentFillButtonStyle())
                     .help("Install the latest version")
                 }
                 moreMenu

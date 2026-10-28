@@ -277,7 +277,7 @@ struct TabRow: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 7)
-        .background(active ? LumenTheme.accent.opacity(0.08) : Color.clear)
+        .background(active ? LumenTheme.accentFill : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture { session.select(tab.id) }
         .contextMenu {

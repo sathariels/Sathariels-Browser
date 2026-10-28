@@ -33,7 +33,7 @@ struct GrokPanel: View {
                     Text("Add an xAI API key in Settings to chat and use page actions. Your key stays in the macOS Keychain.")
                         .font(LumenTheme.monoSmall).foregroundStyle(LumenTheme.textDim)
                     Button("Connect xAI…") { settingsSection = "Grok"; openSettings() }
-                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent))
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent, accent: true))
                 }.padding(12)
             }
             providerRow
