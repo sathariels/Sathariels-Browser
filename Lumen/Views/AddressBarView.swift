@@ -28,44 +28,44 @@ struct AddressBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 4) {
-                navButton("chevron.left", help: "Back", enabled: tab.canGoBack) { session.back() }
-                navButton("chevron.right", help: "Forward", enabled: tab.canGoForward) { session.forward() }
-                navButton(tab.isLoading ? "xmark" : "arrow.clockwise", help: tab.isLoading ? "Stop" : "Reload", enabled: true) {
-                    if tab.isLoading { tab.stop() } else { session.reloadFocused() }
-                }
-                omnibox
-                iconButton("arrow.down.circle", help: "Downloads", tint: LumenTheme.sky, active: session.downloadsVisible) {
-                    session.downloadsVisible.toggle()
-                }
-                iconButton("books.vertical", help: "Library, history, and clipboard", tint: LumenTheme.lime, active: session.sidebarVisible) {
-                    if session.sidebarVisible {
-                        session.sidebarVisible = false
-                    } else {
-                        session.upperPane = .bookmarks
-                        session.sidebarVisible = true
+            HStack(spacing: 7) {
+                HStack(spacing: 1) {
+                    navButton("chevron.left", help: "Back", enabled: tab.canGoBack) { session.back() }
+                    navButton("chevron.right", help: "Forward", enabled: tab.canGoForward) { session.forward() }
+                    navButton(tab.isLoading ? "xmark" : "arrow.clockwise", help: tab.isLoading ? "Stop" : "Reload", enabled: true) {
+                        if tab.isLoading { tab.stop() } else { session.reloadFocused() }
                     }
                 }
-                iconButton("sparkles", help: "Grok", tint: LumenTheme.violet, active: session.grokVisible) {
-                    session.toggleGrok()
+                omnibox
+                Button { openSettings() } label: {
+                    Image(systemName: "person")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(LumenTheme.profileText)
+                        .frame(width: 27, height: 27)
+                        .background(LumenTheme.profile)
+                        .overlay(Rectangle().strokeBorder(LumenTheme.profileBorder, lineWidth: 1))
                 }
+                .buttonStyle(.plain)
+                .help("Settings")
                 moreMenu
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .frame(height: 46)
-            .background(LumenTheme.bg)
-
-            if tab.isLoading {
-                GeometryReader { proxy in
-                    Rectangle()
-                        .fill(LumenTheme.tabColor(tab.colorIndex))
-                        .frame(width: max(2, proxy.size.width * tab.progress), height: 2)
+            .padding(.horizontal, 9)
+            .frame(height: 45)
+            .background(LumenTheme.toolbar)
+            .overlay(alignment: .bottom) {
+                if tab.isLoading {
+                    GeometryReader { proxy in
+                        Rectangle()
+                            .fill(LumenTheme.accent)
+                            .frame(width: max(2, proxy.size.width * tab.progress), height: 2)
+                    }
+                    .frame(height: 2)
+                } else {
+                    Rectangle().fill(Color(red: 23 / 255, green: 27 / 255, blue: 24 / 255)).frame(height: 1)
                 }
-                .frame(height: 2)
-            } else {
-                Rectangle().fill(LumenTheme.border).frame(height: 2)
             }
+
+            bookmarkBar
 
             if showSite, let host = tab.url?.host {
                 SitePermissionsEditor(host: host, store: session.permissions, onAutoplayChange: {
@@ -124,10 +124,11 @@ struct AddressBarView: View {
                 showSite.toggle()
                 if showSite { menuOpen = false }
             } label: {
-                Image(systemName: tab.url?.scheme == "https" ? "lock" : "info.circle")
+                Image(systemName: tab.url == nil ? "magnifyingglass" : (tab.url?.scheme == "https" ? "lock" : "magnifyingglass"))
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(LumenTheme.sky)
-                    .frame(width: 28, height: 28)
+                    .foregroundStyle(LumenTheme.omniboxMuted)
+                    .frame(width: 22, height: 22)
+                    .padding(.leading, 8)
             }
             .buttonStyle(.plain)
             .help("Site settings")
@@ -183,16 +184,18 @@ struct AddressBarView: View {
                 guard let url = tab.url else { return }
                 bookmarks.toggle(url: url, title: tab.title)
             } label: {
-                Image(systemName: isBookmarked ? "star.fill" : "star")
+                Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isBookmarked ? LumenTheme.amber : LumenTheme.textDim)
-                    .frame(width: 28, height: 28)
+                    .foregroundStyle(isBookmarked ? LumenTheme.accent : LumenTheme.omniboxMuted)
+                    .frame(width: 22, height: 22)
+                    .padding(.trailing, 8)
             }
             .buttonStyle(.plain)
             .help("Bookmark this page")
         }
-        .background(LumenTheme.field)
-        .overlay(Rectangle().strokeBorder(editing ? LumenTheme.amber : LumenTheme.border, lineWidth: 1))
+        .frame(height: 30)
+        .background(editing ? Color(red: 32 / 255, green: 37 / 255, blue: 34 / 255) : LumenTheme.omnibox)
+        .overlay(Rectangle().strokeBorder(editing ? LumenTheme.omniboxFocus : LumenTheme.omniboxBorder, lineWidth: 1))
     }
 
     private var suggestionList: some View {
@@ -218,7 +221,7 @@ struct AddressBarView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(index == highlight ? LumenTheme.bgRaised : LumenTheme.field)
+                    .background(index == highlight ? LumenTheme.toolbar : LumenTheme.omnibox)
                 }
                 .buttonStyle(.plain)
                 .onHover { inside in
@@ -227,8 +230,8 @@ struct AddressBarView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LumenTheme.field)
-        .overlay(Rectangle().strokeBorder(LumenTheme.border, lineWidth: 1))
+        .background(LumenTheme.omnibox)
+        .overlay(Rectangle().strokeBorder(LumenTheme.omniboxBorder, lineWidth: 1))
     }
 
     private var moreMenu: some View {
@@ -242,6 +245,7 @@ struct AddressBarView: View {
             Divider()
             Button("Inspect Element") { session.showInspector() }
             Button(session.viewportOpen ? "Hide Responsive Size" : "Responsive Size") { session.viewportOpen.toggle() }
+            Button(session.grokVisible ? "Hide Grok" : "Grok") { session.toggleGrok() }
             Button("Library") {
                 session.upperPane = .bookmarks
                 session.sidebarVisible = true
@@ -251,8 +255,8 @@ struct AddressBarView: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(LumenTheme.text)
-                .frame(width: 28, height: 28)
+                .foregroundStyle(LumenTheme.activeText)
+                .frame(width: 33, height: 33)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -341,25 +345,65 @@ struct AddressBarView: View {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
                 .frame(width: 28, height: 28)
-                .foregroundStyle(enabled ? LumenTheme.text : LumenTheme.textDim)
+                .foregroundStyle(enabled ? LumenTheme.activeText : LumenTheme.omniboxMuted)
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.32)
         .help(help)
     }
 
-    private func iconButton(_ symbol: String, help: String, tint: Color, active: Bool, action: @escaping () -> Void) -> some View {
+    private var bookmarkBar: some View {
+        HStack(spacing: 4) {
+            bookmarkChip("square.grid.2x2", title: "Apps") { openLibrary() }
+            Rectangle().fill(LumenTheme.ink.opacity(0.15)).frame(width: 1, height: 17)
+            if bookmarks.bookmarks.isEmpty {
+                bookmarkChip(nil, title: "Mail") { open(urlString: "https://mail.google.com") }
+                bookmarkChip(nil, title: "Maps") { open(urlString: "https://maps.google.com") }
+                bookmarkChip(nil, title: "News") { open(urlString: "https://news.google.com") }
+                bookmarkChip(nil, title: "Workspace") { open(urlString: "https://github.com") }
+            } else {
+                ForEach(bookmarks.bookmarks.prefix(6)) { mark in
+                    bookmarkChip(nil, title: mark.title) { open(urlString: mark.url) }
+                }
+            }
+            Spacer(minLength: 8)
+            bookmarkChip("folder", title: "All bookmarks") { openLibrary() }
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 31)
+        .background(LumenTheme.bookmarkBar)
+        .overlay(alignment: .bottom) { Rectangle().fill(LumenTheme.ink.opacity(0.12)).frame(height: 1) }
+    }
+
+    private func openLibrary() {
+        session.upperPane = .bookmarks
+        session.sidebarVisible = true
+    }
+
+    private func open(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        session.navigateFocused(to: url)
+    }
+
+    private func bookmarkChip(_ symbol: String?, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(active ? tint : LumenTheme.text)
-                .frame(width: 28, height: 28)
-                .background(active ? tint.opacity(0.16) : Color.clear)
-                .overlay(Rectangle().strokeBorder(active ? tint.opacity(0.85) : Color.clear, lineWidth: 1))
+            HStack(spacing: 6) {
+                if let symbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: 10, weight: .medium))
+                }
+                Text(title)
+                    .lineLimit(1)
+            }
+            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .foregroundStyle(LumenTheme.bookmarkText)
+            .padding(.horizontal, 8)
+            .frame(height: 23)
         }
         .buttonStyle(.plain)
-        .help(help)
     }
+
 }
 
 struct OmniboxField: NSViewRepresentable {
@@ -388,7 +432,7 @@ struct OmniboxField: NSViewRepresentable {
             string: placeholder,
             attributes: [
                 .font: GhostFieldView.font,
-                .foregroundColor: NSColor(srgbRed: 0.557, green: 0.580, blue: 0.557, alpha: 1)
+                .foregroundColor: NSColor(srgbRed: 152 / 255, green: 163 / 255, blue: 156 / 255, alpha: 1)
             ]
         )
         let editorActive = view.field.currentEditor() != nil
@@ -482,7 +526,7 @@ struct OmniboxField: NSViewRepresentable {
 /// The ghost used to be a second NSTextField on the same rect. It won hit testing,
 /// so the real field never became first responder and keystrokes went nowhere.
 final class GhostFieldView: NSView {
-    static let font = NSFont.systemFont(ofSize: 13)
+    static let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
     let field = OmniboxTextField(string: "")
     private let ghost = NSTextField(labelWithString: "")
     var suffix = "" {
@@ -492,7 +536,7 @@ final class GhostFieldView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = NSColor(srgbRed: 0.067, green: 0.071, blue: 0.082, alpha: 1).cgColor
+        layer?.backgroundColor = NSColor(srgbRed: 37 / 255, green: 42 / 255, blue: 39 / 255, alpha: 1).cgColor
         field.isBordered = false
         field.isBezeled = false
         field.drawsBackground = false
@@ -502,7 +546,7 @@ final class GhostFieldView: NSView {
         field.refusesFirstResponder = false
         field.focusRingType = .none
         field.font = Self.font
-        field.textColor = NSColor(srgbRed: 0.89, green: 0.90, blue: 0.85, alpha: 1)
+        field.textColor = NSColor(srgbRed: 225 / 255, green: 231 / 255, blue: 227 / 255, alpha: 1)
         field.lineBreakMode = .byTruncatingHead
         field.cell?.usesSingleLineMode = true
         field.cell?.isScrollable = true

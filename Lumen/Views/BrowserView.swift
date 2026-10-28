@@ -16,7 +16,7 @@ struct BrowserView: View {
             TabStrip(session: session)
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    Color.clear.frame(height: 48)
+                    Color.clear.frame(height: 76)
                     if session.viewportOpen, let tab = session.focusedTab {
                         ViewportBar(tab: tab)
                     }
@@ -148,7 +148,7 @@ struct TabStrip: View {
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(LumenTheme.text)
+                            .foregroundStyle(LumenTheme.activeText)
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.plain)
@@ -164,7 +164,7 @@ struct TabStrip: View {
             }
         }
         .padding(.leading, leading)
-        .frame(height: 38)
+        .frame(height: 39, alignment: .bottom)
         .background(WindowDrag())
         .background(TrafficInset(leading: $leading))
         .overlay(alignment: .bottom) {
@@ -180,24 +180,25 @@ struct TabChip: View {
 
     var body: some View {
         let active = session.focusedTab?.id == tab.id
-        let color = LumenTheme.tabColor(tab.colorIndex)
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Button {
                 session.select(tab.id)
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     if let image = tab.favicon {
                         Image(nsImage: image)
                             .resizable()
                             .frame(width: 14, height: 14)
                     } else {
-                        Rectangle()
-                            .fill(color)
-                            .frame(width: 8, height: 8)
+                        Image(systemName: "leaf.fill")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(LumenTheme.markLeaf)
+                            .frame(width: 18, height: 18)
+                            .background(LumenTheme.mark)
                     }
-                    Text(tab.title.isEmpty ? "New Tab" : tab.title)
-                        .font(.system(size: 12))
-                        .foregroundStyle(LumenTheme.text)
+                    Text(tab.title.isEmpty ? "New tab" : tab.title)
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundStyle(active ? LumenTheme.activeText : LumenTheme.tabText)
                         .lineLimit(1)
                     Spacer(minLength: 4)
                 }
@@ -207,20 +208,23 @@ struct TabChip: View {
                 Button {
                     session.closeTab(tab.id)
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(LumenTheme.textDim)
+                    Text("×")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color(red: 135 / 255, green: 145 / 255, blue: 139 / 255))
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.plain)
                 .help("Close tab")
             }
         }
-        .padding(.horizontal, 8)
-        .frame(width: 188, height: 32)
-        .background(active ? LumenTheme.bg : Color.clear)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(active ? color : Color.clear).frame(height: 2)
+        .padding(.horizontal, 10)
+        .frame(width: 220, height: 32)
+        .background(active ? LumenTheme.toolbar : LumenTheme.tabIdle)
+        .overlay(alignment: .top) {
+            Rectangle().fill(active ? LumenTheme.accent : Color.clear).frame(height: 2)
+        }
+        .overlay(alignment: .trailing) {
+            Rectangle().fill(LumenTheme.tabLine).frame(width: 1)
         }
         .contentShape(Rectangle())
         .onHover { hover = $0 }
@@ -247,12 +251,12 @@ struct WindowDrag: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = DragView()
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor(srgbRed: 0.118, green: 0.129, blue: 0.149, alpha: 1).cgColor
+        view.layer?.backgroundColor = NSColor(srgbRed: 29 / 255, green: 34 / 255, blue: 31 / 255, alpha: 1).cgColor
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        nsView.layer?.backgroundColor = NSColor(srgbRed: 0.118, green: 0.129, blue: 0.149, alpha: 1).cgColor
+        nsView.layer?.backgroundColor = NSColor(srgbRed: 29 / 255, green: 34 / 255, blue: 31 / 255, alpha: 1).cgColor
     }
 
     final class DragView: NSView {
@@ -656,7 +660,7 @@ struct StatusBar: View {
         .font(LumenTheme.micro)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(LumenTheme.bgRaised)
-        .overlay(alignment: .top) { Rectangle().fill(LumenTheme.border).frame(height: 1) }
+        .background(LumenTheme.strip)
+        .overlay(alignment: .top) { Rectangle().fill(LumenTheme.tabLine).frame(height: 1) }
     }
 }
