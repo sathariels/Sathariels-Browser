@@ -78,7 +78,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     @Published var secondaryTabID: UUID?
     @Published var focusedPane: Pane = .primary
     @Published var splitFraction: CGFloat = 0.5
-    @Published var sidebarVisible = true
+    @Published var sidebarVisible = false
     @Published var sidebarWidth: Double = 248
     @Published var clipboardHeight: Double = 180
     @Published var grokVisible = false

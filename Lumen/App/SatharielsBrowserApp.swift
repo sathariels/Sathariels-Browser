@@ -11,11 +11,12 @@ struct SatharielsBrowserApp: App {
 
     var body: some Scene {
         WindowGroup(id: "browser", for: WindowLaunch.self) { $launch in
-            BrowserRoot(launch: launch ?? WindowLaunch(index: 0, isPrivate: false))
+            BrowserRoot(launch: launch)
         } defaultValue: {
             WindowLaunch(index: 0, isPrivate: false)
         }
         .defaultSize(width: 1180, height: 780)
+        .windowStyle(.hiddenTitleBar)
         .commands { SatharielsBrowserCommands() }
 
         Settings {
@@ -70,6 +71,10 @@ struct BrowserRoot: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // A SwiftUI window that is not key never installs a field editor, so the
+        // address bar ignores typing until the app is a normal foreground app.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
         ContentBlocker.shared.prepare()
         MemoryPressureCenter.shared.onPressure = { critical in
             SessionRegistry.shared.suspendForMemory(critical: critical)

@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: Compile Release
+    runs-on: macos-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          if [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
+
+      - name: Compile Release
+        run: |
+          xcodebuild \
+            -project SatharielsBrowser.xcodeproj \
+            -scheme SatharielsBrowser \
+            -configuration Release \
+            -destination "platform=macOS" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=-" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            ENABLE_HARDENED_RUNTIME=NO \
+            DEVELOPMENT_TEAM="" \
+            build

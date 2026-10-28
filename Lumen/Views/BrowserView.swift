@@ -11,41 +11,44 @@ struct BrowserView: View {
     var body: some View {
         VStack(spacing: 0) {
             if session.isPrivate {
-                Rectangle().fill(LumenTheme.coral).frame(height: 3)
-                Text("PRIVATE  ·  not saved to history")
-                    .font(LumenTheme.micro)
-                    .foregroundStyle(LumenTheme.coral)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(LumenTheme.bg)
+                Rectangle().fill(LumenTheme.coral).frame(height: 2)
             }
-            HStack(spacing: 0) {
-                if session.sidebarVisible {
-                    SidebarView(session: session)
-                        .frame(width: session.sidebarWidth)
-                    dragHandle(width: true)
-                }
+            TabStrip(session: session)
+            ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    AddressBarHost(session: session)
+                    Color.clear.frame(height: 48)
                     if session.viewportOpen, let tab = session.focusedTab {
                         ViewportBar(tab: tab)
                     }
                     if session.findVisible { FindBar(session: session) }
                     BannerHost(session: session)
-                    split
-                    if session.downloadsVisible {
-                        DownloadsPanel()
-                            .frame(height: 160)
+                    HStack(spacing: 0) {
+                        if session.sidebarVisible {
+                            SidebarView(session: session)
+                                .frame(width: session.sidebarWidth)
+                            dragHandle(width: true)
+                        }
+                        ZStack(alignment: .topTrailing) {
+                            split
+                            if session.downloadsVisible {
+                                DownloadsPanel()
+                                    .frame(width: 420, height: 240)
+                                    .padding(8)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        if session.grokVisible, let chat = session.chatStore {
+                            dragHandle(width: false)
+                            GrokPanel(session: session, chat: chat)
+                                .frame(width: session.grokWidth)
+                        }
                     }
                     StatusBar(session: session)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                if session.grokVisible, let chat = session.chatStore {
-                    dragHandle(width: false)
-                    GrokPanel(session: session, chat: chat)
-                        .frame(width: session.grokWidth)
-                }
+                AddressBarHost(session: session)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .zIndex(2)
             }
         }
         .background(LumenTheme.bg)
@@ -126,6 +129,163 @@ struct BrowserView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
         .onTapGesture { session.focus(pane) }
+    }
+}
+
+struct TabStrip: View {
+    @ObservedObject var session: BrowserSession
+    @State private var leading: CGFloat = 76
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(session.tabs) { tab in
+                        TabChip(session: session, tab: tab)
+                    }
+                    Button {
+                        session.newTab()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(LumenTheme.text)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .help("New tab")
+                }
+                .padding(.leading, 4)
+            }
+            if session.isPrivate {
+                Text("PRIVATE")
+                    .font(LumenTheme.micro)
+                    .foregroundStyle(LumenTheme.coral)
+                    .padding(.horizontal, 8)
+            }
+        }
+        .padding(.leading, leading)
+        .frame(height: 38)
+        .background(WindowDrag())
+        .background(TrafficInset(leading: $leading))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(LumenTheme.border).frame(height: 1)
+        }
+    }
+}
+
+struct TabChip: View {
+    @ObservedObject var session: BrowserSession
+    @ObservedObject var tab: BrowserTab
+    @State private var hover = false
+
+    var body: some View {
+        let active = session.focusedTab?.id == tab.id
+        let color = LumenTheme.tabColor(tab.colorIndex)
+        HStack(spacing: 6) {
+            Button {
+                session.select(tab.id)
+            } label: {
+                HStack(spacing: 6) {
+                    if let image = tab.favicon {
+                        Image(nsImage: image)
+                            .resizable()
+                            .frame(width: 14, height: 14)
+                    } else {
+                        Rectangle()
+                            .fill(color)
+                            .frame(width: 8, height: 8)
+                    }
+                    Text(tab.title.isEmpty ? "New Tab" : tab.title)
+                        .font(.system(size: 12))
+                        .foregroundStyle(LumenTheme.text)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                }
+            }
+            .buttonStyle(.plain)
+            if active || hover {
+                Button {
+                    session.closeTab(tab.id)
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(LumenTheme.textDim)
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.plain)
+                .help("Close tab")
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(width: 188, height: 32)
+        .background(active ? LumenTheme.bg : Color.clear)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(active ? color : Color.clear).frame(height: 2)
+        }
+        .contentShape(Rectangle())
+        .onHover { hover = $0 }
+        .contextMenu {
+            Button("Open in Split") { session.openInSplit(tab.id) }
+            Button("Reload") { session.select(tab.id); session.reloadFocused() }
+            Button("Copy URL") {
+                if let url = tab.url?.absoluteString {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url, forType: .string)
+                }
+            }
+            Menu("Color") {
+                ForEach(0..<LumenTheme.tabPalette.count, id: \.self) { index in
+                    Button("Tag \(index + 1)") { tab.colorIndex = index }
+                }
+            }
+            Button("Close") { session.closeTab(tab.id) }
+        }
+    }
+}
+
+struct WindowDrag: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = DragView()
+        view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor(srgbRed: 0.118, green: 0.129, blue: 0.149, alpha: 1).cgColor
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.layer?.backgroundColor = NSColor(srgbRed: 0.118, green: 0.129, blue: 0.149, alpha: 1).cgColor
+    }
+
+    final class DragView: NSView {
+        override func mouseDown(with event: NSEvent) {
+            window?.performDrag(with: event)
+        }
+    }
+}
+
+struct TrafficInset: NSViewRepresentable {
+    @Binding var leading: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        let view = PassHitView()
+        view.onMove = { [weak view] in
+            guard let window = view?.window else { return }
+            let full = window.styleMask.contains(.fullScreen)
+            let next: CGFloat = full ? 8 : 76
+            if leading != next { leading = next }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? PassHitView)?.onMove = { [weak nsView] in
+            guard let window = nsView?.window else { return }
+            let full = window.styleMask.contains(.fullScreen)
+            let next: CGFloat = full ? 8 : 76
+            if leading != next { leading = next }
+        }
+        let full = nsView.window?.styleMask.contains(.fullScreen) == true
+        let next: CGFloat = full ? 8 : 76
+        if leading != next { leading = next }
     }
 }
 
@@ -272,9 +432,14 @@ struct KeyWindowProbe: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         (nsView as? ProbeView)?.session = session
-        nsView.window?.title = session.isPrivate ? "Private — Sathariels Browser" : (session.focusedTab?.title ?? "Sathariels Browser")
-        nsView.window?.backgroundColor = LumenTheme.windowBackground
-        nsView.window?.appearance = NSAppearance(named: .darkAqua)
+        guard let window = nsView.window else { return }
+        window.title = session.isPrivate ? "Private — Sathariels Browser" : (session.focusedTab?.title ?? "Sathariels Browser")
+        window.backgroundColor = LumenTheme.windowBackground
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
+        window.isMovableByWindowBackground = false
     }
 
     final class ProbeView: NSView {
