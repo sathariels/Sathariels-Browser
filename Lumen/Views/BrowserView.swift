@@ -47,6 +47,15 @@ struct BrowserView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .zIndex(2)
+                if session.commandVisible {
+                    Color.black.opacity(0.55)
+                        .onTapGesture { session.commandVisible = false }
+                        .zIndex(3)
+                    CommandPanel(session: session)
+                        .padding(.top, 72)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .zIndex(4)
+                }
             }
         }
         .background(LumenTheme.bg)
@@ -296,11 +305,22 @@ struct TabChip: View {
     var width: CGFloat = 190
     var compact: Bool = false
     @State private var hover = false
+    @ObservedObject private var loads = TabLoadCenter.shared
 
     var body: some View {
         let active = session.focusedTab?.id == tab.id
         let showClose = !tab.pinned && (active || hover)
         HStack(spacing: compact ? 4 : 8) {
+            if tab.audible || tab.muted {
+                Button { tab.toggleMute() } label: {
+                    Image(systemName: tab.muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(LumenTheme.accent)
+                        .frame(width: 14, height: 14)
+                }
+                .buttonStyle(.plain)
+                .help(tab.muted ? "Unmute tab" : "Mute tab")
+            }
             favicon
             if !compact && !tab.pinned {
                 Text(tab.title.isEmpty ? "New tab" : tab.title)
@@ -341,6 +361,17 @@ struct TabChip: View {
         }
         .contentShape(Rectangle())
         .onHover { hover = $0 }
+        .overlay(alignment: .bottom) {
+            if hover, let row = loads.row(tab.id) {
+                Text(row.asleep ? "asleep" : "\(row.measured ? "" : "~")\(MemoryFormat.megabytes(row.bytes)) · \(EnergyEstimate.label(row.cpu))")
+                    .font(LumenTheme.micro)
+                    .foregroundStyle(LumenTheme.accentOn)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(LumenTheme.accent)
+                    .offset(y: 16)
+            }
+        }
         .contextMenu { tabMenu }
     }
 

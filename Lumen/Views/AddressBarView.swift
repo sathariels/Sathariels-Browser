@@ -61,6 +61,22 @@ struct AddressBarView: View {
                 .fixedSize()
                 .help("Google account and settings")
                 navButton("text.alignleft", help: "Reading mode", enabled: tab.webView != nil) { tab.toggleReader() }
+                if session.mediaTab != nil {
+                    navButton(session.mediaTab?.playing == true ? "pause.fill" : "play.fill", help: "Play or pause media", enabled: true) {
+                        session.toggleMediaPlayback()
+                    }
+                    navButton("pip", help: "Picture in picture", enabled: true) { session.pictureInPicture() }
+                }
+                navButton("clock", help: "History and bookmarks", enabled: true) { session.historyVisible.toggle() }
+                    .popover(isPresented: $session.historyVisible, arrowEdge: .bottom) {
+                        HistoryPanel(session: session, onClose: { session.historyVisible = false })
+                            .preferredColorScheme(.dark)
+                    }
+                navButton("memorychip", help: "Tab memory", enabled: true) { session.memoryVisible.toggle() }
+                    .popover(isPresented: $session.memoryVisible, arrowEdge: .bottom) {
+                        MemoryPanel(session: session, onClose: { session.memoryVisible = false })
+                            .preferredColorScheme(.dark)
+                    }
                 Button { session.downloadsVisible.toggle() } label: {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.down")
@@ -290,6 +306,14 @@ struct AddressBarView: View {
     private var moreMenu: some View {
         Menu {
             Button("Find") { session.showFind() }
+            Button("History") { session.showHistory() }
+            Button("Search Tabs and Library") { session.showCommand() }
+            Button("Tab Memory") { session.showMemory() }
+            Divider()
+            Button("Zoom In") { session.changeZoom(1) }
+            Button("Zoom Out") { session.changeZoom(-1) }
+            Button("Actual Size") { session.changeZoom(0) }
+            Button("Picture in Picture") { session.pictureInPicture() }
             Button("Downloads") { session.downloadsVisible.toggle() }
             Divider()
             Button("Split View") { session.toggleSplit() }

@@ -56,12 +56,12 @@ enum WebKitFactory {
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         ), to: controller)
-        addUserScript(WKUserScript(
-            source: PageScripts.findEngine,
-            injectionTime: .atDocumentEnd,
-            forMainFrameOnly: true
-        ), to: controller)
         if capturePasswords {
+            addUserScript(WKUserScript(
+                source: PageScripts.mediaWatcher,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ), to: controller)
             addUserScript(WKUserScript(
                 source: PageScripts.passwordWatcher,
                 injectionTime: .atDocumentEnd,
@@ -143,7 +143,10 @@ enum WebKitFactory {
             use.proxy = WeakScriptProxy(target: handler)
         }
         guard let proxy = use.proxy else { return }
-        if capturePasswords { addHandler(proxy, name: "lumenPassword", controller: controller, use: use) }
+        if capturePasswords {
+            addHandler(proxy, name: "lumenPassword", controller: controller, use: use)
+            addHandler(proxy, name: "lumenMedia", controller: controller, use: use)
+        }
         if pageGhost { addHandler(proxy, name: "lumenGhost", controller: controller, use: use) }
     }
 

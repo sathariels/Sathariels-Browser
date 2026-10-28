@@ -11,6 +11,10 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private var offeredGoogleFallback = false
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "lumenMedia" {
+            handleMedia(message)
+            return
+        }
         if message.name == "lumenGhost" {
             handleGhost(message)
             return
@@ -40,6 +44,15 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         case .later:
             break
         }
+    }
+
+    private func handleMedia(_ message: WKScriptMessage) {
+        guard let tab, message.webView == nil || message.webView === tab.webView else { return }
+        let body = message.body as? [String: Any]
+        let playing = body?["playing"] as? Bool ?? false
+        let audible = body?["audible"] as? Bool ?? false
+        tab.playing = playing
+        tab.audible = audible && !tab.muted
     }
 
     private func handleGhost(_ message: WKScriptMessage) {
@@ -176,6 +189,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         tab?.pageWarning = nil
         tab?.url = url
         tab?.errorText = nil
+        tab?.applyRememberedZoom(in: webView)
         session?.persist()
     }
 

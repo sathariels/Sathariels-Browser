@@ -32,6 +32,8 @@
 		C36AF754F5003DDAF5F717F3 /* FilterListCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03CD11C29D2C03346905E65 /* FilterListCompiler.swift */; };
 		56572FC9319103CE5BF085E4 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/HistoryStore.swift"; sourceTree = "<group>"; };
 		C65492A8541143BB5CF0FF68 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56572FC9319103CE5BF085E4 /* HistoryStore.swift */; };
+		AD617F88920DFB89676871BB /* LibraryDB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/LibraryDB.swift"; sourceTree = "<group>"; };
+		83E838EED51FBE03C38A3F67 /* LibraryDB.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD617F88920DFB89676871BB /* LibraryDB.swift */; };
 		4A6A518165CEC45E6A504B7F /* NavigationGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/NavigationGuard.swift"; sourceTree = "<group>"; };
 		7EEFFA01FB36B9426674C8A4 /* NavigationGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6A518165CEC45E6A504B7F /* NavigationGuard.swift */; };
 		DACC665535B178B17F150FB0 /* PasswordUnlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/PasswordUnlock.swift"; sourceTree = "<group>"; };
@@ -46,6 +48,8 @@
 		6318916E6D24DB7CE55173E8 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C07B443B7236DFC67B04A95A /* SessionStore.swift */; };
 		4B7049C754F0A44229273418 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SettingsStore.swift"; sourceTree = "<group>"; };
 		1211513AAF67BB5112FF4671 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7049C754F0A44229273418 /* SettingsStore.swift */; };
+		69D4ABA66E9D3232CAD060E9 /* TabLoadCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/TabLoadCenter.swift"; sourceTree = "<group>"; };
+		D77E3EC7FC077F09D4A1C8D6 /* TabLoadCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69D4ABA66E9D3232CAD060E9 /* TabLoadCenter.swift */; };
 		EA619D15D380297C0117B8FC /* TabSleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/TabSleep.swift"; sourceTree = "<group>"; };
 		14057A0D167B72568C56152B /* TabSleep.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA619D15D380297C0117B8FC /* TabSleep.swift */; };
 		3FC15C29954DDEA9364C2882 /* TabWebDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/TabWebDelegate.swift"; sourceTree = "<group>"; };
@@ -74,6 +78,8 @@
 		1A80314B24B9BA7728AC3766 /* GrokPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50F3BD5E3556D9206719F2C /* GrokPanel.swift */; };
 		DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/JSONTreeView.swift"; sourceTree = "<group>"; };
 		A59207734A759114BD573B0F /* JSONTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */; };
+		E21CA8F8C91DD14BF4558E0F /* LibraryPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/LibraryPanels.swift"; sourceTree = "<group>"; };
+		D32DFE683D004491839A4C6F /* LibraryPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E21CA8F8C91DD14BF4558E0F /* LibraryPanels.swift */; };
 		1A2F77C6C68AA863B38C61D5 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/ReaderView.swift"; sourceTree = "<group>"; };
 		A09A71A0A6AEB9C3C5520065 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2F77C6C68AA863B38C61D5 /* ReaderView.swift */; };
 		B4D1FC7E20CAFB535E6B1E9F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SettingsView.swift"; sourceTree = "<group>"; };
@@ -88,6 +94,8 @@
 		37E4984407FDDDE79AECA50A /* UpdateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE0BC38BE6BDBDC9625E63F /* UpdateSheet.swift */; };
 		4F85392747498B5CB641F40E /* AddressResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/AddressResolver.swift"; sourceTree = "<group>"; };
 		699E93171E3BF3E3AA4FD6B4 /* AddressResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F85392747498B5CB641F40E /* AddressResolver.swift */; };
+		03BFDD8AAC4C9BF373CB6DB1 /* CommandSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/CommandSearch.swift"; sourceTree = "<group>"; };
+		F9F257A6BC1B366CCA2566E7 /* CommandSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BFDD8AAC4C9BF373CB6DB1 /* CommandSearch.swift */; };
 		02E3267F4B4962AF1B939828 /* GoogleSignInDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/GoogleSignInDetector.swift"; sourceTree = "<group>"; };
 		CAA2816DC184DB46CCE237FB /* GoogleSignInDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E3267F4B4962AF1B939828 /* GoogleSignInDetector.swift */; };
 		02B986AE9C83260894D18DDD /* JSONDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/JSONDocument.swift"; sourceTree = "<group>"; };
@@ -172,6 +180,7 @@
 				C83F3FB4455F56E2BC2353CD,
 				C03CD11C29D2C03346905E65,
 				56572FC9319103CE5BF085E4,
+				AD617F88920DFB89676871BB,
 				4A6A518165CEC45E6A504B7F,
 				DACC665535B178B17F150FB0,
 				BCFEE526FD9622F4EBEAE2D9,
@@ -179,6 +188,7 @@
 				7AE05705E721FA6013A53BF2,
 				C07B443B7236DFC67B04A95A,
 				4B7049C754F0A44229273418,
+				69D4ABA66E9D3232CAD060E9,
 				EA619D15D380297C0117B8FC,
 				3FC15C29954DDEA9364C2882,
 				068DB41A4D40D33B43906D5F,
@@ -193,6 +203,7 @@
 				603C240113B3E90796F4BB59,
 				E50F3BD5E3556D9206719F2C,
 				DBFA3A1CCECE328E132687D5,
+				E21CA8F8C91DD14BF4558E0F,
 				1A2F77C6C68AA863B38C61D5,
 				B4D1FC7E20CAFB535E6B1E9F,
 				08536FE46846110A7CBD5AEC,
@@ -200,6 +211,7 @@
 				66FC6EB2B4BFAFEAE6417B7A,
 				EEE0BC38BE6BDBDC9625E63F,
 				4F85392747498B5CB641F40E,
+				03BFDD8AAC4C9BF373CB6DB1,
 				02E3267F4B4962AF1B939828,
 				02B986AE9C83260894D18DDD,
 				50F60DD45F857B7EB67485A7,
@@ -297,6 +309,7 @@
 				51BA37AAAA1B87318E9587C5,
 				C36AF754F5003DDAF5F717F3,
 				C65492A8541143BB5CF0FF68,
+				83E838EED51FBE03C38A3F67,
 				7EEFFA01FB36B9426674C8A4,
 				F5EF242C9EF311A0E562A634,
 				085AC09D61866E9A9D45F258,
@@ -304,6 +317,7 @@
 				D3A44D22E7622F945D39EFA1,
 				6318916E6D24DB7CE55173E8,
 				1211513AAF67BB5112FF4671,
+				D77E3EC7FC077F09D4A1C8D6,
 				14057A0D167B72568C56152B,
 				832A4196D94FBDEAD249669D,
 				297A76D12FAF5B26EAEF54E2,
@@ -318,6 +332,7 @@
 				AB621C61F914F23FEDD4AE8D,
 				1A80314B24B9BA7728AC3766,
 				A59207734A759114BD573B0F,
+				D32DFE683D004491839A4C6F,
 				A09A71A0A6AEB9C3C5520065,
 				5A048A5962D239BE0A1D024E,
 				26C9A947185B64CFCEE288B0,
@@ -325,6 +340,7 @@
 				42F9F4D400DB4C2CFD1A8656,
 				37E4984407FDDDE79AECA50A,
 				699E93171E3BF3E3AA4FD6B4,
+				F9F257A6BC1B366CCA2566E7,
 				CAA2816DC184DB46CCE237FB,
 				3E041302B81286BA599AC6F8,
 				EE780048A8203C2CA8ED3693,
@@ -440,7 +456,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.6.3;
+				CURRENT_PROJECT_VERSION = 0.7.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -449,7 +465,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.6.3;
+				OTHER_LDFLAGS = "-lsqlite3";
+				MARKETING_VERSION = 0.7.0;
 				SWIFT_OBJC_BRIDGING_HEADER = Lumen/Support/Lumen-Bridging-Header.h;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
@@ -471,7 +488,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.6.3;
+				CURRENT_PROJECT_VERSION = 0.7.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -480,7 +497,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.6.3;
+				OTHER_LDFLAGS = "-lsqlite3";
+				MARKETING_VERSION = 0.7.0;
 				SWIFT_OBJC_BRIDGING_HEADER = Lumen/Support/Lumen-Bridging-Header.h;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;

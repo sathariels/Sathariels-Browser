@@ -112,6 +112,102 @@ enum PageScripts {
     })();
     """
 
+    /// Event-driven. No timer. Posts only when media actually changes.
+    static let mediaWatcher = """
+    (function () {
+      if (window.__lumenMedia) return;
+      window.__lumenMedia = true;
+      function state() {
+        var nodes = document.querySelectorAll('video,audio');
+        var playing = false;
+        var audible = false;
+        for (var i = 0; i < nodes.length && i < 40; i++) {
+          var media = nodes[i];
+          if (media.paused || media.ended) continue;
+          playing = true;
+          if (!media.muted && media.volume > 0) audible = true;
+        }
+        try {
+          window.webkit.messageHandlers.lumenMedia.postMessage({ playing: playing, audible: audible });
+        } catch (e) {}
+      }
+      document.addEventListener('play', state, true);
+      document.addEventListener('pause', state, true);
+      document.addEventListener('ended', state, true);
+      document.addEventListener('volumechange', state, true);
+    })();
+    """
+
+    static func findCount(_ query: String) -> String {
+        """
+        (function () {
+          var q = \(jsLiteral(query));
+          if (!q || !document.body) return 0;
+          var needle = String(q).toLowerCase();
+          var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          var count = 0;
+          var cap = 400;
+          var node;
+          while ((node = walker.nextNode()) && count < cap) {
+            var value = node.nodeValue || '';
+            if (!value || value.length > 100000) continue;
+            var hay = value.toLowerCase();
+            var from = 0;
+            var at = hay.indexOf(needle, from);
+            while (at !== -1 && count < cap) {
+              count++;
+              from = at + Math.max(needle.length, 1);
+              at = hay.indexOf(needle, from);
+            }
+          }
+          return count;
+        })()
+        """
+    }
+
+    static func muteMedia(_ mute: Bool) -> String {
+        """
+        (function () {
+          var nodes = document.querySelectorAll('video,audio');
+          for (var i = 0; i < nodes.length && i < 40; i++) nodes[i].muted = \(mute ? "true" : "false");
+          return \(mute ? "true" : "false");
+        })()
+        """
+    }
+
+    static let pictureInPicture = """
+    (function () {
+      var video = document.querySelector('video');
+      if (!video) return 'none';
+      try {
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture();
+          return 'exit';
+        }
+      } catch (e) {}
+      try {
+        if (video.webkitSupportsPresentationMode && video.webkitSupportsPresentationMode('picture-in-picture')) {
+          var next = video.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture';
+          video.webkitSetPresentationMode(next);
+          return next;
+        }
+      } catch (e) {}
+      try {
+        var pending = video.requestPictureInPicture();
+        if (pending && pending.catch) pending.catch(function () {});
+        return 'enter';
+      } catch (e) {
+        return 'failed';
+      }
+    })()
+    """
+
+    static func jsLiteral(_ value: String) -> String {
+        let data = try? JSONSerialization.data(withJSONObject: [value])
+        let encoded = data.flatMap { String(data: $0, encoding: .utf8) } ?? "[\"\"]"
+        return String(encoded.dropFirst().dropLast())
+    }
+
     static func permissionSource(_ site: SitePermissions) -> String {
         var parts: [String] = ["(function(){"]
         if site.notifications == .deny {

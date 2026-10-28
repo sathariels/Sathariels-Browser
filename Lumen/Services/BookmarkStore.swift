@@ -6,34 +6,25 @@ final class BookmarkStore: ObservableObject {
     @Published private(set) var bookmarks: [Bookmark] = []
 
     private init() {
-        bookmarks = JSONStore.load("bookmarks.json", as: [Bookmark].self) ?? []
+        reload()
     }
 
     func contains(url: URL) -> Bool {
-        guard let absolute = HistoryStore.normalize(url)?.absoluteString else { return false }
-        return bookmarks.contains { $0.url == absolute }
+        LibraryDB.shared.containsBookmark(url: url)
     }
 
     func toggle(url: URL, title: String) {
-        guard let normalized = HistoryStore.normalize(url), let host = url.host?.lowercased() else { return }
-        let absolute = normalized.absoluteString
-        if let index = bookmarks.firstIndex(where: { $0.url == absolute }) {
-            bookmarks.remove(at: index)
-        } else {
-            bookmarks.insert(Bookmark(
-                id: UUID(),
-                url: absolute,
-                title: title.isEmpty ? host : String(title.prefix(180)),
-                host: host,
-                created: Date()
-            ), at: 0)
-        }
-        JSONStore.save(bookmarks, as: "bookmarks.json")
+        _ = LibraryDB.shared.toggleBookmark(url: url, title: title)
+        reload()
     }
 
     func delete(_ id: UUID) {
-        bookmarks.removeAll { $0.id == id }
-        JSONStore.save(bookmarks, as: "bookmarks.json")
+        LibraryDB.shared.deleteBookmark(id)
+        reload()
+    }
+
+    func search(_ query: String, limit: Int = 50) -> [Bookmark] {
+        LibraryDB.shared.searchBookmarks(query, limit: limit)
     }
 
     func omniboxEntries() -> [Omnibox.Entry] {
@@ -47,5 +38,9 @@ final class BookmarkStore: ObservableObject {
                 tabID: nil
             )
         }
+    }
+
+    private func reload() {
+        bookmarks = LibraryDB.shared.bookmarks()
     }
 }
