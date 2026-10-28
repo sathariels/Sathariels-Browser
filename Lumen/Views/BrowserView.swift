@@ -440,6 +440,7 @@ struct KeyWindowProbe: NSViewRepresentable {
         window.titlebarAppearsTransparent = true
         window.styleMask.insert(.fullSizeContentView)
         window.isMovableByWindowBackground = false
+        ScreenshotLaunch.place(window)
     }
 
     final class ProbeView: NSView {

@@ -6,6 +6,7 @@ struct SatharielsBrowserApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
+        ScreenshotLaunch.parse()
         LaunchCoordinator.shared.load()
     }
 
@@ -38,7 +39,10 @@ struct BrowserRoot: View {
     var body: some View {
         BrowserView(session: session)
             .onAppear {
-                guard launch.index == 0, !launch.isPrivate else { return }
+                if launch.index == 0, !launch.isPrivate {
+                    ScreenshotLaunch.apply(to: session)
+                }
+                guard launch.index == 0, !launch.isPrivate, !ScreenshotLaunch.enabled else { return }
                 LaunchCoordinator.shared.openExtras { index in
                     openWindow(value: WindowLaunch(index: index, isPrivate: false))
                 }
@@ -66,6 +70,59 @@ struct BrowserRoot: View {
                     session.select(session.tabs[index].id)
                 }
             ))
+    }
+}
+
+enum ScreenshotLaunch {
+    static var enabled = false
+    static var url: URL?
+    static var focusAddress = false
+    static var readyPath: String?
+    private static var applied = false
+    private static var placed = false
+
+    static func parse() {
+        let args = CommandLine.arguments
+        func value(after flag: String) -> String? {
+            guard let index = args.firstIndex(of: flag), args.indices.contains(index + 1) else { return nil }
+            return args[index + 1]
+        }
+        if let raw = value(after: "--screenshot-url") {
+            url = URL(string: raw)
+        }
+        focusAddress = args.contains("--focus-address")
+        readyPath = value(after: "--screenshot-ready")
+        enabled = url != nil || focusAddress || readyPath != nil
+    }
+
+    static func apply(to session: BrowserSession) {
+        guard enabled, !applied else { return }
+        applied = true
+        if let url {
+            session.navigateFocused(to: url)
+        }
+        let delay: TimeInterval = url == nil ? 0.8 : 6
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if focusAddress {
+                session.focusAddress()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                guard let readyPath else { return }
+                try? Data("ready\n".utf8).write(to: URL(fileURLWithPath: readyPath))
+            }
+        }
+    }
+
+    static func place(_ window: NSWindow) {
+        guard enabled, !placed else { return }
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        placed = true
+        let visible = screen.visibleFrame
+        let size = NSSize(width: min(1200, visible.width - 80), height: min(800, visible.height - 80))
+        let origin = NSPoint(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2)
+        window.setFrame(NSRect(origin: origin, size: size), display: true)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
     }
 }
 

@@ -119,7 +119,7 @@ final class BrowserSession: ObservableObject, Identifiable {
             permissions = .shared
         }
         popups.session = self
-        if !isPrivate, let snapshot = LaunchCoordinator.shared.snapshot(for: launch.index) {
+        if !isPrivate, !ScreenshotLaunch.enabled, let snapshot = LaunchCoordinator.shared.snapshot(for: launch.index) {
             restore(snapshot)
         } else {
             let tab = makeTab(url: nil, title: "New Tab")
