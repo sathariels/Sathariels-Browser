@@ -245,7 +245,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func select(_ id: UUID) {
-        guard let tab = tab(id) else { return }
+        guard tab(id) != nil else { return }
         if secondaryTabID == id {
             focusedPane = .secondary
         } else if primaryTabID == id {
@@ -595,7 +595,7 @@ final class BrowserSession: ObservableObject, Identifiable {
                 focusCount: max(1, tab.focusCount),
                 loading: tab.isLoading,
                 downloading: DownloadController.shared.isDownloading(tab.id),
-                capturing: tab.capturingMedia(),
+                capturing: false,
                 hasWebView: tab.webView != nil
             )
         }
@@ -608,7 +608,7 @@ final class BrowserSession: ObservableObject, Identifiable {
             now: now
         )
         for id in chosen {
-            guard let tab = tab(id), let view = tab.webView else { continue }
+            guard let tab = tab(id), let view = tab.webView, !tab.capturingMedia() else { continue }
             view.evaluateJavaScript(PageScripts.sleepSnapshot) { [weak self, weak tab, weak view] result, error in
                 guard let self, let tab, let view, error == nil, tab.webView === view else { return }
                 guard !tab.pinned, !self.visibleTabIDs().contains(tab.id), !self.neighborTabIDs().contains(tab.id) else { return }

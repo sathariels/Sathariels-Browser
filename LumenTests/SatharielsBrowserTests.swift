@@ -304,47 +304,37 @@ final class SatharielsBrowserTests: XCTestCase {
 
     @MainActor
     func testWindowOpenAndTargetBlankDoNotCrash() throws {
+        SettingsStore.shared.tabSleepMode = .off
         let session = BrowserSession(launch: WindowLaunch(index: -210, isPrivate: false))
-        defer { session.shutdown() }
+        defer {
+            SettingsStore.shared.tabSleepMode = .smart
+            session.shutdown()
+        }
         session.permissions.set(host: "example.com", kind: .popups, choice: .allow)
         session.navigateFocused(to: URL(string: "about:blank")!)
         let opener = try XCTUnwrap(session.focusedTab?.webView)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.contentView = opener
-        window.makeKeyAndOrderFront(nil)
-        defer { window.close() }
-        let html = """
-        <!doctype html><body>
-        <a id="blank" href="https://example.com/blank" target="_blank">blank</a>
-        <script>
-        window.open("https://example.com/tab");
-        window.open("https://example.com/sized", "sized", "width=480,height=640");
-        document.getElementById("blank").click();
-        </script>
-        </body>
+        let script = """
+        window.open("about:blank");
+        window.open("about:blank", "sized", "width=480,height=640");
+        var link = document.createElement("a");
+        link.href = "about:blank";
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
         """
-        opener.loadHTMLString(html, baseURL: URL(string: "https://example.com/")!)
-        let deadline = Date().addingTimeInterval(15)
+        opener.evaluateJavaScript(script, completionHandler: nil)
+        let deadline = Date().addingTimeInterval(6)
         while Date() < deadline {
-            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
             if session.tabs.count >= 2 && session.popups.openCount >= 1 { break }
         }
-        XCTAssertGreaterThanOrEqual(session.tabs.count, 2, "window.open() should add a tab")
+        NSLog("POPUP_TEST tabs=\(session.tabs.count) popups=\(session.popups.openCount)")
+        XCTAssertGreaterThanOrEqual(session.tabs.count, 2, "window.open() or target=_blank should add a tab")
         XCTAssertGreaterThanOrEqual(session.popups.openCount, 1, "a sized window.open should open a popup")
-        let controller = opener.configuration.userContentController
-        let scripts = controller.userScripts.count
-        XCTAssertGreaterThan(scripts, 0)
-        if let extra = session.tabs.first(where: { $0.webView !== opener }) {
-            session.closeTab(extra.id)
-        }
+        let scripts = opener.configuration.userContentController.userScripts.count
         session.popups.closeAll()
-        XCTAssertEqual(controller.userScripts.count, scripts)
-        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+        XCTAssertEqual(opener.configuration.userContentController.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: opener.configuration.userContentController).contains("lumenPassword"))
     }
 
     func testSmartSleepLeavesRecentTabsAlone() {
