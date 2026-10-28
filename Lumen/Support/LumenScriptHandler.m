@@ -18,6 +18,17 @@ static void LumenCrashSignal(int code) {
     raise(code);
 }
 
+static void LumenException(NSException *exception) {
+    if (LumenCrashFD < 0 || exception == nil) return;
+    NSString *line = [NSString stringWithFormat:@"exception %@: %@\n", exception.name, exception.reason ?: @""];
+    const char *utf = line.UTF8String;
+    if (utf) write(LumenCrashFD, utf, strlen(utf));
+}
+
+void LumenInstallExceptionHandler(void) {
+    NSSetUncaughtExceptionHandler(&LumenException);
+}
+
 void LumenInstallSignals(void) {
     signal(SIGABRT, LumenCrashSignal);
     signal(SIGSEGV, LumenCrashSignal);

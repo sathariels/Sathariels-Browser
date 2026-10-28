@@ -8,3 +8,4 @@ BOOL LumenAddScriptMessageHandler(WKUserContentController *controller, id<WKScri
 void LumenRemoveScriptMessageHandler(WKUserContentController *controller, NSString *name);
 void LumenInstallCrashNote(const char *path);
 void LumenInstallSignals(void);
+void LumenInstallExceptionHandler(void);

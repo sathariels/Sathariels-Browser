@@ -25,12 +25,7 @@ enum CrashCenter {
             url.path.withCString { LumenInstallCrashNote($0) }
         }
         LumenInstallSignals()
-        NSSetUncaughtExceptionHandler { exception in
-            let line = "exception \(exception.name.rawValue): \(exception.reason ?? "")\n"
-            if let data = line.data(using: .utf8), let url = try? JSONStore.url(noteName) {
-                try? data.write(to: url, options: .atomic)
-            }
-        }
+        LumenInstallExceptionHandler()
     }
 
     static func markRunning() {
