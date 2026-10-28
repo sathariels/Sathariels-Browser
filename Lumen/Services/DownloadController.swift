@@ -23,6 +23,7 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
     private var observations: [UUID: NSKeyValueObservation] = [:]
     private var idByObject: [ObjectIdentifier: UUID] = [:]
     private var samples: [UUID: (date: Date, bytes: Int64)] = [:]
+    private var draining = false
     private let listName = "downloads.json"
 
     var hasActive: Bool { rows.contains { $0.state == .active } }
@@ -93,10 +94,28 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
     }
 
     func cancel(_ id: UUID) {
-        downloads[id]?.cancel(nil)
+        guard let download = downloads[id] else { return }
         mark(id, state: .cancelled, detail: "Cancelled")
         deleteResume(id)
-        release(id, deletePartial: true)
+        // WebKit crashes if the WKDownload is released before the cancel finishes.
+        download.cancel { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.release(id, deletePartial: true)
+            }
+        }
+    }
+
+    var hasLiveDownloads: Bool { !downloads.isEmpty }
+
+    /// Runs the main run loop until in-flight downloads have reported completion.
+    func waitUntilIdle(timeout: TimeInterval = 2) {
+        guard !draining else { return }
+        draining = true
+        defer { draining = false }
+        let deadline = Date().addingTimeInterval(timeout)
+        while !downloads.isEmpty, Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
     }
 
     func canResume(_ id: UUID) -> Bool { resumeDataExists(id) }
