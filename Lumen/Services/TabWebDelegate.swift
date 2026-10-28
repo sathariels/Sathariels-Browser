@@ -180,6 +180,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
                 HistoryStore.shared.record(url: url, title: tab.title)
             }
             tab.loadFavicon()
+            tab.restoreScroll(in: webView)
             sniffJSON(url: url, webView: webView)
             noteGoogle(url: url, webView: webView)
             tab.considerPasswordFill()

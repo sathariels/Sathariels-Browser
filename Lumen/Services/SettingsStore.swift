@@ -5,6 +5,7 @@ final class SettingsStore: ObservableObject {
 
     @Published var searchEngine: SearchEngine { didSet { save() } }
     @Published var suspendMinutes: Int { didSet { save() } }
+    @Published var tabSleepMode: TabSleepMode { didSet { save() } }
     @Published var contentBlocking: Bool { didSet { save(); ContentBlocker.shared.applyToLiveTabs() } }
     @Published var httpsOnly: Bool { didSet { save() } }
     @Published var blockThirdPartyCookies: Bool { didSet { save(); ContentBlocker.shared.applyToLiveTabs() } }
@@ -30,6 +31,7 @@ final class SettingsStore: ObservableObject {
         searchEngine = engine
         let minutes = defaults.integer(forKey: "suspendMinutes")
         suspendMinutes = minutes == 0 ? 2 : min(180, max(1, minutes))
+        tabSleepMode = defaults.string(forKey: "tabSleepMode").flatMap(TabSleepMode.init(rawValue:)) ?? .smart
         if defaults.object(forKey: "contentBlocking") == nil {
             contentBlocking = true
         } else {
@@ -82,6 +84,7 @@ final class SettingsStore: ObservableObject {
         guard ready else { return }
         defaults.set(searchEngine.rawValue, forKey: "searchEngine")
         defaults.set(suspendMinutes, forKey: "suspendMinutes")
+        defaults.set(tabSleepMode.rawValue, forKey: "tabSleepMode")
         defaults.set(contentBlocking, forKey: "contentBlocking")
         defaults.set(httpsOnly, forKey: "httpsOnly")
         defaults.set(blockThirdPartyCookies, forKey: "blockThirdPartyCookies")

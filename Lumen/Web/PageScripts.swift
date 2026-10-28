@@ -209,13 +209,43 @@ enum PageScripts {
 
     static let mediaPlaying = """
     (function () {
-      if (window.__lumenHasEdits) return true;
       var nodes = document.querySelectorAll('video, audio');
       for (var i = 0; i < nodes.length; i++) {
         var el = nodes[i];
         if (!el.paused && !el.ended) return true;
       }
+      try {
+        if (navigator.mediaSession && navigator.mediaSession.playbackState === 'playing') return true;
+      } catch (e) {}
       return false;
+    })()
+    """
+
+    /// Media, unsaved fields, and scroll position. The booleans stay in the page; values are not stored.
+    static let sleepSnapshot = """
+    (function () {
+      var media = false;
+      var nodes = document.querySelectorAll('video, audio');
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (!el.paused && !el.ended) media = true;
+      }
+      try {
+        if (navigator.mediaSession && navigator.mediaSession.playbackState === 'playing') media = true;
+      } catch (e) {}
+      var dirty = window.__lumenHasEdits === true;
+      if (!dirty) {
+        var fields = document.querySelectorAll('input, textarea, select');
+        var cap = Math.min(fields.length, 200);
+        for (var j = 0; j < cap; j++) {
+          var field = fields[j];
+          var type = (field.type || '').toLowerCase();
+          if (type === 'password' || type === 'hidden') continue;
+          if ((type === 'checkbox' || type === 'radio') && field.checked !== field.defaultChecked) { dirty = true; break; }
+          if (field.defaultValue != null && String(field.value || '') !== String(field.defaultValue)) { dirty = true; break; }
+        }
+      }
+      return { media: media, dirty: dirty, x: window.scrollX || 0, y: window.scrollY || 0 };
     })()
     """
 

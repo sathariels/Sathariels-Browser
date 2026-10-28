@@ -117,7 +117,7 @@ enum WebKitFactory {
         // Other web views, including the opener, still need the scripts, rules, and handlers.
         guard use.owners == 0 else { return }
         for name in use.handlerNames {
-            controller.removeScriptMessageHandler(forName: name)
+            LumenRemoveScriptMessageHandler(controller, name)
         }
         use.handlerNames.removeAll()
         use.proxy = nil
@@ -149,7 +149,9 @@ enum WebKitFactory {
 
     private static func addHandler(_ proxy: WeakScriptProxy, name: String, controller: WKUserContentController, use: ControllerUse) {
         guard !use.handlerNames.contains(name) else { return }
-        controller.add(proxy, name: name)
+        // A copied popup controller can already contain the name. add(_:name:) raises
+        // NSException in that case, so the ObjC helper reports it instead of aborting.
+        _ = LumenAddScriptMessageHandler(controller, proxy, name)
         use.handlerNames.insert(name)
     }
 

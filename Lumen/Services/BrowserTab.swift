@@ -36,6 +36,8 @@ final class BrowserTab: ObservableObject, Identifiable {
 
     private(set) var webView: WKWebView?
     var lastFocused = Date.distantPast
+    var focusCount = 0
+    var scrollRestore: (x: Double, y: Double, url: String)?
     weak var session: BrowserSession?
     let delegate: TabWebDelegate
     private var observations: [NSKeyValueObservation] = []
@@ -78,6 +80,7 @@ final class BrowserTab: ObservableObject, Identifiable {
         passwordUsernames = []
         jsonDocument = nil
         lastFocused = Date()
+        scrollRestore = nil
         if webView == nil {
             wake()
         } else {
@@ -183,6 +186,22 @@ final class BrowserTab: ObservableObject, Identifiable {
             board.clearContents()
             board.setString(text, forType: .string)
         }
+    }
+
+    func capturingMedia() -> Bool {
+        guard let webView else { return false }
+        if #available(macOS 13.3, *) {
+            return webView.cameraCaptureState != .none || webView.microphoneCaptureState != .none
+        }
+        return false
+    }
+
+    func restoreScroll(in webView: WKWebView) {
+        guard let scrollRestore, let url = webView.url?.absoluteString, scrollRestore.url == url else { return }
+        let x = scrollRestore.x
+        let y = scrollRestore.y
+        self.scrollRestore = nil
+        webView.evaluateJavaScript("window.scrollTo(\(x), \(y));", completionHandler: nil)
     }
 
     func suspend() {

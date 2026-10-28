@@ -82,12 +82,21 @@ struct SettingsView: View {
     private var memory: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "Memory", color: LumenTheme.amber)
-            Stepper(value: $settings.suspendMinutes, in: 1...180) {
-                Text("Suspend idle tabs after \(settings.suspendMinutes) min")
-                    .font(LumenTheme.monoSmall)
-                    .foregroundStyle(LumenTheme.text)
+            Picker("Tab sleep", selection: $settings.tabSleepMode) {
+                ForEach(TabSleepMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
             }
-            Text("Keeps a target of four live web tabs per window. Older background tabs sleep after the idle timeout or when over this target. Playing media, downloads, loading pages, and detected page edits are protected during normal cleanup. New tabs use no web renderer. Memory-pressure cleanup may discard background state.")
+            .pickerStyle(.segmented)
+            .font(LumenTheme.monoSmall)
+            if settings.tabSleepMode == .aggressive {
+                Stepper(value: $settings.suspendMinutes, in: 1...180) {
+                    Text("Aggressive idle timeout \(settings.suspendMinutes) min")
+                        .font(LumenTheme.monoSmall)
+                        .foregroundStyle(LumenTheme.text)
+                }
+            }
+            Text("Smart keeps tabs awake for at least 30 minutes, longer when you return to them, and discards only under macOS memory pressure before that. Pinned tabs, playing audio or video, camera or microphone capture, unsaved fields, the visible tabs, and their neighbors stay loaded. Scroll position is restored on wake. Aggressive also sleeps extra background tabs. Off does not sleep tabs unless memory is critical.")
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.textDim)
         }

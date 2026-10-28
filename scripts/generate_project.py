@@ -123,7 +123,7 @@ def swift_files(folder: Path) -> list[str]:
     files = []
     for dirpath, _, filenames in os.walk(folder):
         for name in sorted(filenames):
-            if name.endswith(".swift"):
+            if name.endswith(".swift") or name.endswith(".m"):
                 files.append(str(Path(dirpath, name).relative_to(folder)))
     return files
 
@@ -156,7 +156,8 @@ def write_project() -> None:
 
     build_ids = []
     for path in sources:
-        ref = file_ref(path, "sourcecode.swift")
+        kind = "sourcecode.c.objc" if path.endswith(".m") else "sourcecode.swift"
+        ref = file_ref(path, kind)
         bid = add(f"build:{path}", f"""\t\t{pid(f"build:{path}")} /* {Path(path).name} in Sources */ = {{isa = PBXBuildFile; fileRef = {ref} /* {Path(path).name} */; }};""")
         build_ids.append(bid)
         app_sources.append(bid)
@@ -287,6 +288,7 @@ def write_project() -> None:
         "INFOPLIST_FILE": "Lumen/Info.plist",
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks"',
         "MARKETING_VERSION": "0.5.1",
+        "SWIFT_OBJC_BRIDGING_HEADER": "Lumen/Support/Lumen-Bridging-Header.h",
         "SU_PUBLIC_ED_KEY": '""',
         "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser",
         "PRODUCT_MODULE_NAME": "SatharielsBrowser",

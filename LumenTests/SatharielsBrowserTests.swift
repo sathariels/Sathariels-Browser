@@ -347,6 +347,48 @@ final class SatharielsBrowserTests: XCTestCase {
         XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
     }
 
+    func testSmartSleepLeavesRecentTabsAlone() {
+        let now = Date()
+        let active = UUID()
+        let neighbor = UUID()
+        let recent = UUID()
+        let old = UUID()
+        let pinned = UUID()
+        func input(_ id: UUID, focused: Date, count: Int, pinnedFlag: Bool = false, visible: Bool = false, neighborFlag: Bool = false) -> TabSleepInput {
+            TabSleepInput(
+                id: id, pinned: pinnedFlag, visible: visible, neighbor: neighborFlag,
+                lastFocused: focused, focusCount: count, loading: false, downloading: false,
+                capturing: false, hasWebView: true
+            )
+        }
+        let tabs = [
+            input(active, focused: now, count: 2, visible: true),
+            input(neighbor, focused: now.addingTimeInterval(-3600), count: 1, neighborFlag: true),
+            input(recent, focused: now.addingTimeInterval(-10 * 60), count: 1),
+            input(old, focused: now.addingTimeInterval(-31 * 60), count: 1),
+            input(pinned, focused: now.addingTimeInterval(-5 * 3600), count: 1, pinnedFlag: true),
+        ]
+        let quiet = TabSleepPolicy.candidates(tabs: tabs, mode: .smart, aggressiveMinutes: 2, pressure: false, critical: false, now: now)
+        XCTAssertEqual(quiet, [old])
+        let frequent = input(old, focused: now.addingTimeInterval(-31 * 60), count: 8)
+        let kept = TabSleepPolicy.candidates(
+            tabs: [input(active, focused: now, count: 1, visible: true), frequent],
+            mode: .smart, aggressiveMinutes: 2, pressure: false, critical: false, now: now
+        )
+        XCTAssertTrue(kept.isEmpty)
+        XCTAssertEqual(TabSleepPolicy.idleLimit(mode: .smart, aggressiveMinutes: 2, focusCount: 1), 30 * 60)
+        XCTAssertGreaterThan(TabSleepPolicy.idleLimit(mode: .smart, aggressiveMinutes: 2, focusCount: 8), 30 * 60)
+        let off = TabSleepPolicy.candidates(tabs: tabs, mode: .off, aggressiveMinutes: 2, pressure: false, critical: false, now: now)
+        XCTAssertTrue(off.isEmpty)
+        let pressed = TabSleepPolicy.candidates(tabs: tabs, mode: .smart, aggressiveMinutes: 2, pressure: true, critical: true, now: now)
+        XCTAssertEqual(pressed, [old, recent])
+        let aggressive = TabSleepPolicy.candidates(
+            tabs: [input(active, focused: now, count: 1, visible: true), input(recent, focused: now.addingTimeInterval(-3 * 60), count: 1)],
+            mode: .aggressive, aggressiveMinutes: 2, pressure: false, critical: false, now: now
+        )
+        XCTAssertEqual(aggressive, [recent])
+    }
+
     func testAsuraHostsAreNotThreatListed() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
         let hashes = ThreatList.decode(try Data(contentsOf: url))
