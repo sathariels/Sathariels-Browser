@@ -54,6 +54,8 @@
 		AB621C61F914F23FEDD4AE8D /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603C240113B3E90796F4BB59 /* BrowserView.swift */; };
 		E50F3BD5E3556D9206719F2C /* GrokPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/GrokPanel.swift"; sourceTree = "<group>"; };
 		1A80314B24B9BA7728AC3766 /* GrokPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50F3BD5E3556D9206719F2C /* GrokPanel.swift */; };
+		DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/JSONTreeView.swift"; sourceTree = "<group>"; };
+		A59207734A759114BD573B0F /* JSONTreeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFA3A1CCECE328E132687D5 /* JSONTreeView.swift */; };
 		B4D1FC7E20CAFB535E6B1E9F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SettingsView.swift"; sourceTree = "<group>"; };
 		5A048A5962D239BE0A1D024E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D1FC7E20CAFB535E6B1E9F /* SettingsView.swift */; };
 		08536FE46846110A7CBD5AEC /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SidebarView.swift"; sourceTree = "<group>"; };
@@ -66,10 +68,16 @@
 		699E93171E3BF3E3AA4FD6B4 /* AddressResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F85392747498B5CB641F40E /* AddressResolver.swift */; };
 		02E3267F4B4962AF1B939828 /* GoogleSignInDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/GoogleSignInDetector.swift"; sourceTree = "<group>"; };
 		CAA2816DC184DB46CCE237FB /* GoogleSignInDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E3267F4B4962AF1B939828 /* GoogleSignInDetector.swift */; };
+		02B986AE9C83260894D18DDD /* JSONDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/JSONDocument.swift"; sourceTree = "<group>"; };
+		3E041302B81286BA599AC6F8 /* JSONDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B986AE9C83260894D18DDD /* JSONDocument.swift */; };
 		50F60DD45F857B7EB67485A7 /* JSONStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/JSONStore.swift"; sourceTree = "<group>"; };
 		EE780048A8203C2CA8ED3693 /* JSONStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F60DD45F857B7EB67485A7 /* JSONStore.swift */; };
 		33A4873F7E4C411B72AE2DE1 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/KeychainStore.swift"; sourceTree = "<group>"; };
 		6A2EC53B8616C74F53E1BEE1 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33A4873F7E4C411B72AE2DE1 /* KeychainStore.swift */; };
+		B839E84B98D07E1D451CCA8F /* KeywordRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/KeywordRouter.swift"; sourceTree = "<group>"; };
+		884C7F2B9B584B1474685188 /* KeywordRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B839E84B98D07E1D451CCA8F /* KeywordRouter.swift */; };
+		2EAD330D6AFC6005174F9506 /* LocalhostScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/LocalhostScanner.swift"; sourceTree = "<group>"; };
+		95A7E277C1C61BAF2F3E419D /* LocalhostScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EAD330D6AFC6005174F9506 /* LocalhostScanner.swift */; };
 		04028A192C531C00C976EAD0 /* LumenTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/LumenTheme.swift"; sourceTree = "<group>"; };
 		007D15E474AA95413A46D471 /* LumenTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04028A192C531C00C976EAD0 /* LumenTheme.swift */; };
 		561595115F084A8562A6B961 /* Memory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Support/Memory.swift"; sourceTree = "<group>"; };
@@ -119,14 +127,18 @@
 				46FD281838B2E8DBDAB34949,
 				603C240113B3E90796F4BB59,
 				E50F3BD5E3556D9206719F2C,
+				DBFA3A1CCECE328E132687D5,
 				B4D1FC7E20CAFB535E6B1E9F,
 				08536FE46846110A7CBD5AEC,
 				99BCA03D3FE0CF5E63DABBEF,
 				66FC6EB2B4BFAFEAE6417B7A,
 				4F85392747498B5CB641F40E,
 				02E3267F4B4962AF1B939828,
+				02B986AE9C83260894D18DDD,
 				50F60DD45F857B7EB67485A7,
 				33A4873F7E4C411B72AE2DE1,
+				B839E84B98D07E1D451CCA8F,
+				2EAD330D6AFC6005174F9506,
 				04028A192C531C00C976EAD0,
 				561595115F084A8562A6B961,
 				170D23F4A78B10E4F484918B,
@@ -198,14 +210,18 @@
 				EE674C0011947EED35CF39CB,
 				AB621C61F914F23FEDD4AE8D,
 				1A80314B24B9BA7728AC3766,
+				A59207734A759114BD573B0F,
 				5A048A5962D239BE0A1D024E,
 				26C9A947185B64CFCEE288B0,
 				1BEC01B3931D53BBBE4995A5,
 				42F9F4D400DB4C2CFD1A8656,
 				699E93171E3BF3E3AA4FD6B4,
 				CAA2816DC184DB46CCE237FB,
+				3E041302B81286BA599AC6F8,
 				EE780048A8203C2CA8ED3693,
 				6A2EC53B8616C74F53E1BEE1,
+				884C7F2B9B584B1474685188,
+				95A7E277C1C61BAF2F3E419D,
 				007D15E474AA95413A46D471,
 				F7DA8CF2DA35239FB3000452,
 				4E41140A703A50F23AE6BCCB,

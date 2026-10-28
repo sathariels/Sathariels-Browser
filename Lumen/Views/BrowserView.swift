@@ -28,6 +28,9 @@ struct BrowserView: View {
                 }
                 VStack(spacing: 0) {
                     AddressBarHost(session: session)
+                    if session.viewportOpen, let tab = session.focusedTab {
+                        ViewportBar(tab: tab)
+                    }
                     if session.findVisible { FindBar(session: session) }
                     BannerHost(session: session)
                     split
@@ -190,9 +193,10 @@ struct PaneContent: View {
 
     var body: some View {
         Group {
-            if let webView = tab.webView {
-                WebViewRepresentable(webView: webView)
-                    .id(ObjectIdentifier(webView))
+            if let document = tab.jsonDocument {
+                JSONTreeView(tab: tab, document: document)
+            } else if let webView = tab.webView {
+                viewportFrame(webView: webView)
             } else if tab.url == nil {
                 StartPageView(session: session, tab: tab)
             } else {
@@ -211,6 +215,23 @@ struct PaneContent: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func viewportFrame(webView: WKWebView) -> some View {
+        if let size = tab.viewport.size {
+            ZStack {
+                LumenTheme.bg
+                WebViewRepresentable(webView: webView)
+                    .id(ObjectIdentifier(webView))
+                    .frame(width: size.width, height: size.height)
+                    .overlay(Rectangle().strokeBorder(LumenTheme.sky, lineWidth: 1))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            WebViewRepresentable(webView: webView)
+                .id(ObjectIdentifier(webView))
         }
     }
 }
@@ -273,6 +294,64 @@ struct KeyWindowProbe: NSViewRepresentable {
         @objc private func willClose() {
             session?.shutdown()
         }
+    }
+}
+
+struct ViewportBar: View {
+    @ObservedObject var tab: BrowserTab
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(ViewportMode.Preset.allCases) { preset in
+                Button(preset.label) {
+                    var mode = tab.viewport
+                    mode.preset = preset
+                    tab.applyViewport(mode)
+                }
+                .buttonStyle(LumenButtonStyle(tint: tab.viewport.preset == preset ? LumenTheme.sky : LumenTheme.textDim))
+            }
+            if tab.viewport.preset == .custom {
+                TextField("W", value: Binding(
+                    get: { tab.viewport.customWidth },
+                    set: { value in
+                        var mode = tab.viewport
+                        mode.customWidth = min(2000, max(200, value))
+                        tab.applyViewport(mode)
+                    }
+                ), format: .number)
+                .textFieldStyle(.plain)
+                .font(LumenTheme.monoSmall)
+                .frame(width: 48)
+                TextField("H", value: Binding(
+                    get: { tab.viewport.customHeight },
+                    set: { value in
+                        var mode = tab.viewport
+                        mode.customHeight = min(2000, max(200, value))
+                        tab.applyViewport(mode)
+                    }
+                ), format: .number)
+                .textFieldStyle(.plain)
+                .font(LumenTheme.monoSmall)
+                .frame(width: 48)
+            }
+            Toggle(isOn: Binding(
+                get: { tab.viewport.mobileUserAgent },
+                set: { value in
+                    var mode = tab.viewport
+                    mode.mobileUserAgent = value
+                    tab.applyViewport(mode)
+                }
+            )) {
+                Text("Mobile UA")
+                    .font(LumenTheme.micro)
+                    .foregroundStyle(LumenTheme.sky)
+            }
+            .toggleStyle(.checkbox)
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(LumenTheme.bgRaised)
     }
 }
 

@@ -229,6 +229,33 @@ The provider protocol is `AIProvider`.
 
 Regular windows save tab order, URLs, titles, color tags, the active pane, the split partner, the divider fraction, and the sidebar width. After a crash or a normal quit, those windows come back. Suspended tabs do not load until focused. The inactive split pane stays asleep until you click it. Private windows are omitted. Turn restore off in Settings to delete the file and stop writing it.
 
+## Inspector, JSON, localhost, responsive
+
+**Inspect Element** is on for every web view (`isInspectable` on macOS 13.3+, and `developerExtrasEnabled`). Right-click a page and choose Inspect Element. **Cmd-Opt-I** asks WebKit to show the inspector when that private hook exists.
+
+**JSON.** A main-frame response whose type contains `json`, or whose URL ends in `.json`, is not handed to the web view. Lumen fetches it (with the tab’s cookies) and shows a collapsible tree: amber keys, teal strings, sky numbers, violet booleans. Raw toggles back to the text. Path and Value copy that node. Documents over about 1.2 MB are refused instead of being parsed. A `text/plain` body that starts with `{` or `[` is sniffed after load and shown the same way. The tree view is created only for that response.
+
+**Local.** The tab list has a Local section. It does not scan until you press Scan. The usual dev ports (3000, 5173, 8080, and a few neighbors) are probed a few at a time. Click a row to open it. **Reload** watches only the focused `localhost` or `127.0.0.1` tab, and only if you turn it on. A restart (the port was down, then answers) or a changed `ETag` / `Last-Modified` reloads that tab.
+
+**Responsive.** The phone button in the address bar frames the current tab as iPhone (390×844), iPad (820×1180), or a custom size. Mobile UA swaps in an iPhone Safari string and reloads once. Full width uses the desktop Safari string again. Nothing about this is loaded until you open the bar.
+
+## Address keywords
+
+These run before search, and only when the first word matches:
+
+| Type | Opens |
+| --- | --- |
+| `gh owner/repo` | `https://github.com/owner/repo` |
+| `gh query` | GitHub search |
+| `yt query` | YouTube search |
+| `lc query` | LeetCode problem search |
+
+Settings → Grok → Keywords can override any of those, or add new ones. Put `{query}` in the URL template. The rest of the line is percent-encoded.
+
+## Copy as Markdown
+
+**Cmd-Opt-M** (also the menu item Copy Page as Markdown) reads `article`, `main`, or the body, skips scripts and styles, and copies a short Markdown version. The pasteboard change shows up in the clipboard list, trimmed to 16,000 characters there. The copy itself is not kept in a web view.
+
 ## Keyboard
 
 | Shortcut | Action |
@@ -248,6 +275,8 @@ Regular windows save tab order, URLs, titles, color tags, the active pane, the s
 | Cmd-Shift-B | Sidebar |
 | Cmd-\\ | Split / close split |
 | Cmd-Option-\\ | Swap split panes |
+| Cmd-Opt-I | Web inspector |
+| Cmd-Opt-M | Copy page as Markdown |
 | Cmd-1 … Cmd-9 | Select tab |
 
 Tab context menus can also open a tab in the split, recolor it, or copy its URL.

@@ -36,6 +36,7 @@ enum WebKitFactory {
         configuration.processPool = processPool
         configuration.websiteDataStore = dataStore
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+        configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         SystemAutoFill.enableIfAvailable(on: configuration.preferences)
         let allowsAutoplay = site?.autoplay == .allow
         configuration.mediaTypesRequiringUserActionForPlayback = allowsAutoplay ? [] : .all
@@ -87,11 +88,7 @@ enum WebKitFactory {
         webView.allowsMagnification = true
         webView.allowsLinkPreview = false
         if #available(macOS 13.3, *) {
-            #if DEBUG
             webView.isInspectable = true
-            #else
-            webView.isInspectable = false
-            #endif
         }
         // Register the bridge only when we need it. An empty WKWebView bridge is one of
         // the signals Google uses to refuse sign-in, so private windows skip it.
@@ -123,6 +120,27 @@ enum WebKitFactory {
         webView.removeFromSuperview()
         objc_setAssociatedObject(webView, &proxyKey, nil, .OBJC_ASSOCIATION_ASSIGN)
         objc_setAssociatedObject(webView, &handlerNamesKey, nil, .OBJC_ASSOCIATION_ASSIGN)
+    }
+}
+
+enum WebInspector {
+    static func show(_ webView: WKWebView) {
+        if #available(macOS 13.3, *) {
+            webView.isInspectable = true
+        }
+        let show = NSSelectorFromString("_showInspector:")
+        if webView.responds(to: show) {
+            webView.perform(show, with: nil)
+            return
+        }
+        let getter = NSSelectorFromString("_inspector")
+        guard webView.responds(to: getter),
+              let unmanaged = webView.perform(getter),
+              let inspector = unmanaged.takeUnretainedValue() as? NSObject else { return }
+        let reveal = NSSelectorFromString("show")
+        if inspector.responds(to: reveal) {
+            inspector.perform(reveal)
+        }
     }
 }
 

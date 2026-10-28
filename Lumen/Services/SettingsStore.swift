@@ -14,6 +14,8 @@ final class SettingsStore: ObservableObject {
     @Published var addressAIGhost: Bool { didSet { save() } }
     @Published var pageFieldGhost: Bool { didSet { save(); SessionRegistry.shared.rebuildLiveWebViews() } }
     @Published var agentInPrivate: Bool { didSet { save() } }
+    @Published var localhostAutoReload: Bool { didSet { save(); SessionRegistry.shared.setLocalWatch(localhostAutoReload) } }
+    @Published var keywordShortcuts: [KeywordShortcut] { didSet { save() } }
     @Published var passwordNeverHosts: [String] { didSet { save() } }
 
     private let defaults = UserDefaults.standard
@@ -47,6 +49,13 @@ final class SettingsStore: ObservableObject {
         addressAIGhost = defaults.bool(forKey: "addressAIGhost")
         pageFieldGhost = defaults.bool(forKey: "pageFieldGhost")
         agentInPrivate = defaults.bool(forKey: "agentInPrivate")
+        localhostAutoReload = defaults.bool(forKey: "localhostAutoReload")
+        if let data = defaults.data(forKey: "keywordShortcuts"),
+           let decoded = try? JSONDecoder().decode([KeywordShortcut].self, from: data) {
+            keywordShortcuts = decoded
+        } else {
+            keywordShortcuts = []
+        }
         passwordNeverHosts = defaults.stringArray(forKey: "passwordNeverHosts") ?? []
         ready = true
     }
@@ -74,6 +83,10 @@ final class SettingsStore: ObservableObject {
         defaults.set(addressAIGhost, forKey: "addressAIGhost")
         defaults.set(pageFieldGhost, forKey: "pageFieldGhost")
         defaults.set(agentInPrivate, forKey: "agentInPrivate")
+        defaults.set(localhostAutoReload, forKey: "localhostAutoReload")
+        if let data = try? JSONEncoder().encode(keywordShortcuts) {
+            defaults.set(data, forKey: "keywordShortcuts")
+        }
         defaults.set(passwordNeverHosts, forKey: "passwordNeverHosts")
     }
 }

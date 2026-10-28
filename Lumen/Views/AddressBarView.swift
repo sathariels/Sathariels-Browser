@@ -45,6 +45,15 @@ struct AddressBarView: View {
                 .buttonStyle(.plain)
                 .help("Bookmark")
                 Button {
+                    session.viewportOpen.toggle()
+                } label: {
+                    Image(systemName: "iphone")
+                        .foregroundStyle(tab.viewport.preset == .full ? LumenTheme.textDim : LumenTheme.sky)
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+                .help("Responsive size")
+                Button {
                     showSite.toggle()
                 } label: {
                     Image(systemName: "info.square")
@@ -212,7 +221,7 @@ struct AddressBarView: View {
             activate(suggestions[highlight])
             return
         }
-        guard let url = AddressResolver.resolve(trimmed, engine: settings.searchEngine) else { return }
+        guard let url = AddressResolver.resolve(trimmed, engine: settings.searchEngine, shortcuts: settings.keywordShortcuts) else { return }
         if let existing = session.tabs.first(where: { $0.url?.absoluteString == url.absoluteString }) {
             session.select(existing.id)
         } else {

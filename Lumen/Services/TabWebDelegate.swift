@@ -86,6 +86,16 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        let mime = navigationResponse.response.mimeType?.lowercased() ?? ""
+        let url = navigationResponse.response.url
+        if navigationResponse.isForMainFrame {
+            tab?.lastMIME = mime
+            if JSONSniffer.shouldIntercept(mime: mime, url: url), let url {
+                decisionHandler(.cancel)
+                tab?.loadJSON(from: url)
+                return
+            }
+        }
         if navigationResponse.canShowMIMEType {
             decisionHandler(.allow)
         } else {
@@ -119,6 +129,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
                 HistoryStore.shared.record(url: url, title: tab.title)
             }
             tab.loadFavicon()
+            sniffJSON(url: url, webView: webView)
             noteGoogle(url: url, webView: webView)
             tab.considerPasswordFill()
         }
@@ -247,6 +258,25 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             )
             session.permissions.set(host: host, kind: kind, choice: allow ? .allow : .deny)
             return allow ? .grant : .deny
+        }
+    }
+
+    private func sniffJSON(url: URL, webView: WKWebView) {
+        guard let tab, tab.jsonDocument == nil, JSONSniffer.shouldSniff(mime: tab.lastMIME, url: url) else { return }
+        webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, 240) : ''") { sample, _ in
+            let text = sample as? String ?? ""
+            guard JSONSniffer.looksLikeJSON(text) else { return }
+            webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, \(JSONSniffer.byteCap)) : ''") { full, _ in
+                guard let raw = full as? String, let document = JSONDocument(raw: raw) else { return }
+                DispatchQueue.main.async {
+                    tab.jsonDocument = document
+                    if webView.canGoBack == false {
+                        tab.releaseWebView()
+                        tab.lifecycle = .suspended
+                        tab.memory = .suspended
+                    }
+                }
+            }
         }
     }
 

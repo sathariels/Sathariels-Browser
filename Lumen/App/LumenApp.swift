@@ -58,6 +58,8 @@ struct BrowserRoot: View {
                 closeSplit: { session.closeSplit() },
                 toggleDownloads: { session.downloadsVisible.toggle() },
                 toggleSidebar: { session.sidebarVisible.toggle() },
+                inspect: { session.showInspector() },
+                copyMarkdown: { session.copyPageMarkdown() },
                 selectTab: { index in
                     guard session.tabs.indices.contains(index) else { return }
                     session.select(session.tabs[index].id)
@@ -98,6 +100,8 @@ struct BrowserActions {
     var closeSplit: () -> Void
     var toggleDownloads: () -> Void
     var toggleSidebar: () -> Void
+    var inspect: () -> Void
+    var copyMarkdown: () -> Void
     var selectTab: (Int) -> Void
 }
 
@@ -159,6 +163,11 @@ struct LumenCommands: Commands {
             Button("Swap Split") { actions?.swapSplit() }
                 .keyboardShortcut("\\", modifiers: [.command, .option])
             Button("Close Split") { actions?.closeSplit() }
+            Divider()
+            Button("Inspect Element") { actions?.inspect() }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+            Button("Copy Page as Markdown") { actions?.copyMarkdown() }
+                .keyboardShortcut("m", modifiers: [.command, .option])
         }
         CommandMenu("Tabs") {
             ForEach(1..<10, id: \.self) { number in

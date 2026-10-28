@@ -57,6 +57,7 @@ struct SidebarView: View {
                     Button("New tab") { session.newTab() }
                         .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
                         .padding(8)
+                    LocalhostSection(session: session)
                 case .bookmarks:
                     if bookmarks.bookmarks.isEmpty {
                         emptyLine("No bookmarks yet. Star a page to keep it.")
@@ -156,6 +157,53 @@ struct SidebarView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+    }
+}
+
+struct LocalhostSection: View {
+    @ObservedObject var session: BrowserSession
+    @ObservedObject private var settings = SettingsStore.shared
+    @State private var open = false
+    @StateObject private var model = LocalhostModel()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(open ? "Local −" : "Local +") { open.toggle() }
+                .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
+                .padding(.horizontal, 8)
+                .padding(.bottom, 4)
+            if open {
+                Text(model.status)
+                    .font(LumenTheme.micro)
+                    .foregroundStyle(LumenTheme.textDim)
+                    .padding(.horizontal, 8)
+                ForEach(model.ports, id: \.self) { port in
+                    Button("127.0.0.1:\(port)") {
+                        if let url = URL(string: "http://127.0.0.1:\(port)") {
+                            session.navigateFocused(to: url)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(LumenTheme.monoSmall)
+                    .foregroundStyle(LumenTheme.lime)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                }
+                HStack(spacing: 6) {
+                    Button(model.scanning ? "…" : "Scan") { model.scan() }
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
+                        .disabled(model.scanning)
+                    Toggle(isOn: $settings.localhostAutoReload) {
+                        Text("Reload")
+                            .font(LumenTheme.micro)
+                            .foregroundStyle(LumenTheme.lime)
+                    }
+                    .toggleStyle(.checkbox)
+                    .help("Reload the focused localhost tab when the server restarts. Off by default.")
+                }
+                .padding(8)
+            }
+        }
     }
 }
 

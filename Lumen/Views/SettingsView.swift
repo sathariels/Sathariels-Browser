@@ -208,6 +208,34 @@ struct SettingsView: View {
             Text("Off by default. Suggests in text fields after a short pause. Never on password fields, and never in private windows. Tab accepts.")
                 .font(LumenTheme.micro)
                 .foregroundStyle(LumenTheme.textDim)
+            Toggle("Reload localhost when the server restarts", isOn: $settings.localhostAutoReload)
+                .font(LumenTheme.monoSmall)
+            Text("Off by default. While on, only the focused localhost tab is polled.")
+                .font(LumenTheme.micro)
+                .foregroundStyle(LumenTheme.textDim)
+            SectionLabel(title: "Keywords", color: LumenTheme.amber)
+            Text("Built in: gh owner/repo, gh search, yt query, lc query. A custom row overrides that keyword. Use {query} in the URL.")
+                .font(LumenTheme.micro)
+                .foregroundStyle(LumenTheme.textDim)
+            ForEach($settings.keywordShortcuts) { $shortcut in
+                HStack(spacing: 6) {
+                    TextField("keyword", text: $shortcut.keyword)
+                        .textFieldStyle(.plain)
+                        .font(LumenTheme.monoSmall)
+                        .frame(width: 70)
+                    TextField("https://example.com/search?q={query}", text: $shortcut.template)
+                        .textFieldStyle(.plain)
+                        .font(LumenTheme.monoSmall)
+                    Button("Delete") {
+                        settings.keywordShortcuts.removeAll { $0.id == shortcut.id }
+                    }
+                    .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
+                }
+            }
+            Button("Add keyword") {
+                settings.keywordShortcuts.append(KeywordShortcut(id: UUID(), keyword: "", template: "https://example.com/{query}"))
+            }
+            .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
             Toggle("Allow the agent in private windows", isOn: $settings.agentInPrivate)
                 .font(LumenTheme.monoSmall)
             Text("The side panel can read, click, type, scroll, and navigate. It asks before submits, purchases, messages, and credentials, and it never reads password fields. Private windows keep the agent off unless this is on.")

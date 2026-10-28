@@ -426,4 +426,53 @@ enum PageScripts {
       }
     };
     """
+
+    static let readableMarkdown = """
+    (function () {
+      function skip(el) {
+        var tag = el.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'SVG') return true;
+        var hidden = el.getAttribute && el.getAttribute('aria-hidden') === 'true';
+        return hidden;
+      }
+      function inline(node) {
+        if (!node) return '';
+        if (node.nodeType === 3) return node.nodeValue || '';
+        if (node.nodeType !== 1 || skip(node)) return '';
+        var tag = node.tagName;
+        var text = Array.prototype.map.call(node.childNodes, inline).join('');
+        if (tag === 'A') {
+          var href = node.getAttribute('href') || '';
+          return href ? '[' + text.trim() + '](' + href + ')' : text;
+        }
+        if (tag === 'CODE') return '`' + text.trim() + '`';
+        if (tag === 'STRONG' || tag === 'B') return '**' + text.trim() + '**';
+        if (tag === 'EM' || tag === 'I') return '*' + text.trim() + '*';
+        if (tag === 'BR') return '\\n';
+        return text;
+      }
+      function block(node, depth) {
+        if (!node || node.nodeType !== 1 || skip(node)) return '';
+        var tag = node.tagName;
+        if (tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4') {
+          var level = Number(tag.slice(1));
+          return '\\n' + '#'.repeat(level) + ' ' + inline(node).trim() + '\\n';
+        }
+        if (tag === 'PRE') return '\\n```\\n' + (node.innerText || '') + '\\n```\\n';
+        if (tag === 'LI') return '\\n' + '  '.repeat(depth) + '- ' + inline(node).trim();
+        if (tag === 'UL' || tag === 'OL') {
+          return Array.prototype.map.call(node.children, function (child) { return block(child, depth + 1); }).join('');
+        }
+        if (tag === 'P' || tag === 'BLOCKQUOTE') return '\\n' + inline(node).trim() + '\\n';
+        return Array.prototype.map.call(node.children, function (child) { return block(child, depth); }).join('');
+      }
+      var root = document.querySelector('article') || document.querySelector('main') || document.querySelector('[role="main"]') || document.body;
+      if (!root) return '';
+      var title = document.title ? '# ' + document.title + '\\n' : '';
+      var url = location.href ? urlLine(location.href) : '';
+      function urlLine(href) { return href + '\\n'; }
+      var body = block(root, 0).replace(/\\n{3,}/g, '\\n\\n').trim();
+      return (title + url + '\\n' + body).slice(0, 80000);
+    })()
+    """
 }

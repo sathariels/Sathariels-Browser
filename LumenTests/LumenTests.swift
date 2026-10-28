@@ -42,6 +42,30 @@ final class LumenTests: XCTestCase {
         XCTAssertGreaterThan(recent, old)
     }
 
+    func testKeywordShortcuts() {
+        XCTAssertEqual(KeywordRouter.resolve("gh sathariels/lumen-browser", custom: [])?.absoluteString, "https://github.com/sathariels/lumen-browser")
+        XCTAssertEqual(KeywordRouter.resolve("gh webkit browser", custom: [])?.host, "github.com")
+        XCTAssertTrue(KeywordRouter.resolve("yt lofi", custom: [])?.absoluteString.contains("search_query=lofi") == true)
+        XCTAssertEqual(KeywordRouter.resolve("lc two sum", custom: [])?.host, "leetcode.com")
+        let custom = [KeywordShortcut(id: UUID(), keyword: "gh", template: "https://example.com/{query}")]
+        XCTAssertEqual(KeywordRouter.resolve("gh hello", custom: custom)?.absoluteString, "https://example.com/hello")
+        XCTAssertNil(KeywordRouter.resolve("example.com", custom: []))
+    }
+
+    func testJSONSniffer() {
+        XCTAssertTrue(JSONSniffer.shouldIntercept(mime: "application/json", url: nil))
+        XCTAssertTrue(JSONSniffer.shouldIntercept(mime: "text/plain", url: URL(string: "http://127.0.0.1:3000/data.json")))
+        XCTAssertFalse(JSONSniffer.shouldIntercept(mime: "text/html", url: URL(string: "https://example.com/")))
+        XCTAssertTrue(JSONSniffer.looksLikeJSON("  {\"a\":1}"))
+        XCTAssertFalse(JSONSniffer.looksLikeJSON("<html>"))
+        let value = JSONValue.parse(text: "{\"name\":\"ada\",\"n\":2}")
+        if case .object(let pairs) = value {
+            XCTAssertEqual(pairs.first?.key, "n")
+        } else {
+            XCTFail("expected object")
+        }
+    }
+
     func testAgentConfirmsRiskyClicksOnly() {
         XCTAssertTrue(AgentSafety.clickNeedsConfirm(type: "submit", text: "Pay now"))
         XCTAssertTrue(AgentSafety.clickNeedsConfirm(type: "button", text: "Send message"))

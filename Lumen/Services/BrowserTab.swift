@@ -23,6 +23,9 @@ final class BrowserTab: ObservableObject, Identifiable {
     @Published var errorText: String?
     @Published var googleBlocked = false
     @Published var passwordUsernames: [String] = []
+    @Published var jsonDocument: JSONDocument?
+    @Published var viewport = ViewportMode()
+    var lastMIME = ""
 
     private(set) var webView: WKWebView?
     var lastFocused = Date.distantPast
@@ -58,6 +61,7 @@ final class BrowserTab: ObservableObject, Identifiable {
         errorText = nil
         googleBlocked = false
         passwordUsernames = []
+        jsonDocument = nil
         lastFocused = Date()
         if webView == nil {
             wake()
@@ -98,6 +102,69 @@ final class BrowserTab: ObservableObject, Identifiable {
         if webView == nil { wake() } else { webView?.reload() }
     }
     func stop() { webView?.stopLoading() }
+
+    func loadJSON(from url: URL) {
+        self.url = url
+        title = url.lastPathComponent
+        jsonDocument = nil
+        errorText = nil
+        let store = session?.dataStore.httpCookieStore
+        let start: ([HTTPCookie]) -> Void = { [weak self] cookies in
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 20
+            let matched = cookies.filter { cookie in
+                guard let host = url.host?.lowercased() else { return false }
+                let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                return host == domain || host.hasSuffix("." + domain)
+            }
+            let headers = HTTPCookie.requestHeaderFields(with: matched)
+            for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
+            URLSession.shared.dataTask(with: request) { data, _, _ in
+                DispatchQueue.main.async {
+                    guard let self, self.url == url else { return }
+                    guard let data, data.count <= JSONSniffer.byteCap, let text = String(data: data, encoding: .utf8), let document = JSONDocument(raw: text) else {
+                        self.errorText = "This JSON response is too large or not valid JSON."
+                        return
+                    }
+                    self.jsonDocument = document
+                    if self.webView?.canGoBack != true {
+                        self.releaseWebView()
+                        self.lifecycle = .suspended
+                        self.memory = .suspended
+                    }
+                }
+            }.resume()
+        }
+        if let store {
+            store.getAllCookies(start)
+        } else {
+            start([])
+        }
+    }
+
+    func showJSONAsPage() {
+        guard let url else { return }
+        jsonDocument = nil
+        navigate(to: url)
+    }
+
+    func applyViewport(_ mode: ViewportMode) {
+        let reload = mode.mobileUserAgent != viewport.mobileUserAgent
+        viewport = mode
+        webView?.customUserAgent = mode.mobileUserAgent ? SafariUserAgent.iPhone : SafariUserAgent.current
+        if reload { webView?.reload() }
+    }
+
+    func copyReadableMarkdown() {
+        guard let webView else { return }
+        webView.evaluateJavaScript(PageScripts.readableMarkdown) { result, _ in
+            let text = (result as? String) ?? ""
+            guard !text.isEmpty else { return }
+            let board = NSPasteboard.general
+            board.clearContents()
+            board.setString(text, forType: .string)
+        }
+    }
 
     func suspend() {
         releaseWebView()

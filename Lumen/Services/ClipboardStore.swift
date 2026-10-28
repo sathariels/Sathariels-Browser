@@ -109,7 +109,7 @@ final class ClipboardStore: ObservableObject {
         if let string = board.string(forType: .string) {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
-            let clipped = String(trimmed.prefix(4_000))
+            let clipped = String(trimmed.prefix(16_000))
             if let url = URL(string: clipped), let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https", clipped.count < 2_000 {
                 push(ClipItem(id: UUID(), kind: .url, text: clipped, created: Date(), pinned: false, thumbFile: nil))
             } else {

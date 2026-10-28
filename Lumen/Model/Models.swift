@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 enum Pane: String, Codable {
@@ -158,6 +159,40 @@ struct DownloadRow: Identifiable, Equatable {
     var state: DownloadState
     var detail: String?
     var tabID: UUID?
+}
+
+struct ViewportMode: Equatable {
+    enum Preset: String, CaseIterable, Identifiable {
+        case full
+        case iPhone
+        case iPad
+        case custom
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .full: return "Full"
+            case .iPhone: return "iPhone"
+            case .iPad: return "iPad"
+            case .custom: return "Custom"
+            }
+        }
+    }
+
+    var preset: Preset = .full
+    var mobileUserAgent = false
+    var customWidth = 390.0
+    var customHeight = 844.0
+
+    var size: CGSize? {
+        switch preset {
+        case .full: return nil
+        case .iPhone: return CGSize(width: 390, height: 844)
+        case .iPad: return CGSize(width: 820, height: 1180)
+        case .custom: return CGSize(width: customWidth, height: customHeight)
+        }
+    }
 }
 
 struct WindowLaunch: Codable, Hashable {

@@ -30,9 +30,13 @@ enum SearchEngine: String, Codable, CaseIterable, Identifiable {
 
 enum AddressResolver {
     /// Turns the address bar into a URL. Words become a search. Hosts get https.
-    static func resolve(_ raw: String, engine: SearchEngine) -> URL? {
+    static func resolve(_ raw: String, engine: SearchEngine, shortcuts: [KeywordShortcut] = []) -> URL? {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return nil }
+
+        if let keyword = KeywordRouter.resolve(text, custom: shortcuts) {
+            return keyword
+        }
 
         if text.hasPrefix("http://") || text.hasPrefix("https://") || text.hasPrefix("file://") {
             return URL(string: text)

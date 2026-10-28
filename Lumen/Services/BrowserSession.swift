@@ -27,6 +27,10 @@ final class SessionRegistry {
     func rebuildLiveWebViews() {
         all().forEach { $0.rebuildLiveWebViews() }
     }
+
+    func setLocalWatch(_ enabled: Bool) {
+        all().forEach { $0.setLocalWatch(enabled) }
+    }
 }
 
 final class LaunchCoordinator {
@@ -95,6 +99,10 @@ final class BrowserSession: ObservableObject, Identifiable {
 
     private var colorCursor = 0
     private var timer: Timer?
+    private var localTimer: Timer?
+    private var localTask: URLSessionDataTask?
+    private var localWasDown = false
+    private var localSignature: String?
     private var closed = false
 
     init(launch: WindowLaunch) {
@@ -120,6 +128,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         }
         SessionRegistry.shared.register(self)
         if !isPrivate { persist() }
+        if SettingsStore.shared.localhostAutoReload { setLocalWatch(true) }
         let timer = Timer(timeInterval: 12, repeats: true) { [weak self] _ in
             self?.suspendIdle()
             self?.refreshMemory()
@@ -130,6 +139,8 @@ final class BrowserSession: ObservableObject, Identifiable {
 
     deinit {
         timer?.invalidate()
+        localTimer?.invalidate()
+        localTask?.cancel()
         tabs.forEach { $0.releaseWebView() }
         popups.closeAll()
     }
@@ -275,6 +286,17 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func focusAddress() { addressFocusToken += 1 }
+
+    func showInspector() {
+        guard let webView = focusedTab?.webView else { return }
+        WebInspector.show(webView)
+    }
+
+    func copyPageMarkdown() {
+        focusedTab?.copyReadableMarkdown()
+    }
+
+    @Published var viewportOpen = false
     func showFind() {
         findVisible = true
         findFocusToken += 1
@@ -345,6 +367,23 @@ final class BrowserSession: ObservableObject, Identifiable {
         } else {
             chatStore?.trimSoft()
         }
+    }
+
+    func setLocalWatch(_ enabled: Bool) {
+        localTimer?.invalidate()
+        localTimer = nil
+        localTask?.cancel()
+        localTask = nil
+        guard enabled else {
+            localWasDown = false
+            localSignature = nil
+            return
+        }
+        let timer = Timer(timeInterval: 2.5, repeats: true) { [weak self] _ in
+            self?.pollLocalhost()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        localTimer = timer
     }
 
     func rebuildLiveWebViews() {
@@ -494,6 +533,42 @@ final class BrowserSession: ObservableObject, Identifiable {
                     tab.suspend()
                 }
             }
+        }
+    }
+
+    private func pollLocalhost() {
+        guard SettingsStore.shared.localhostAutoReload,
+              let tab = focusedTab,
+              let url = tab.url,
+              let host = url.host?.lowercased(),
+              host == "localhost" || host == "127.0.0.1",
+              tab.webView != nil else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        request.timeoutInterval = 1.5
+        localTask?.cancel()
+        localTask = URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
+            DispatchQueue.main.async {
+                self?.noteLocalhost(response: response as? HTTPURLResponse, error: error, tab: tab)
+            }
+        }
+        localTask?.resume()
+    }
+
+    private func noteLocalhost(response: HTTPURLResponse?, error: Error?, tab: BrowserTab) {
+        if error != nil || (response?.statusCode ?? 500) >= 500 {
+            localWasDown = true
+            return
+        }
+        let signature = response?.value(forHTTPHeaderField: "ETag")
+            ?? response?.value(forHTTPHeaderField: "Last-Modified")
+            ?? response.map { "\($0.statusCode)" }
+        let cameBack = localWasDown
+        let changed = localSignature != nil && signature != localSignature
+        localWasDown = false
+        localSignature = signature
+        if cameBack || changed {
+            tab.reload()
         }
     }
 
