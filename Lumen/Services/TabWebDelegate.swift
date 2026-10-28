@@ -53,11 +53,11 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         let label = String((body["label"] as? String ?? "").prefix(80))
         guard prefix.count >= 2 else { return }
         let token = GhostCompletion.bumpField()
-        Task { @MainActor in
+        Task { @MainActor [weak webView] in
             try? await Task.sleep(nanoseconds: 250_000_000)
-            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            guard webView != nil, GhostCompletion.fieldIsCurrent(token) else { return }
             let full = await GhostCompletion.field(prefix: prefix, label: label)
-            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            guard let webView, GhostCompletion.fieldIsCurrent(token) else { return }
             let suffix = full.flatMap { Omnibox.completionSuffix(typed: prefix, suggestion: $0) } ?? ""
             let script = "window.__lumenGhost && window.__lumenGhost.show(\(requestID), \(JSEncode.string(suffix)))"
             webView.evaluateJavaScript(script, completionHandler: nil)
@@ -74,6 +74,23 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             return
         }
         let scheme = url.scheme?.lowercased() ?? ""
+        let main = navigationAction.targetFrame?.isMainFrame ?? true
+        if main, scheme == "http" || scheme == "https" {
+            switch navigationChoice(for: url, action: navigationAction) {
+            case .allow:
+                tab?.pageWarning = nil
+                decisionHandler(.allow, preferences)
+            case .load(let next):
+                tab?.pageWarning = nil
+                decisionHandler(.cancel, preferences)
+                webView.load(URLRequest(url: next))
+            case .warn(let warning):
+                if case .unsafe = warning { tab?.httpsUpgradeURL = nil }
+                tab?.pageWarning = warning
+                decisionHandler(.cancel, preferences)
+            }
+            return
+        }
         switch scheme {
         case "http", "https", "about", "file", "blob", "data":
             decisionHandler(.allow, preferences)
@@ -83,6 +100,38 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             }
             decisionHandler(.cancel, preferences)
         }
+    }
+
+    private enum NavigationChoice {
+        case allow
+        case load(URL)
+        case warn(PageWarning)
+    }
+
+    private func navigationChoice(for url: URL, action: WKNavigationAction) -> NavigationChoice {
+        let method = action.request.httpMethod?.uppercased() ?? "GET"
+        guard method == "GET" || method == "HEAD" else { return .allow }
+        let settings = SettingsStore.shared
+        var current = url
+        if settings.stripTracking, let stripped = TrackingStrip.stripped(current), stripped.absoluteString != current.absoluteString {
+            return .load(stripped)
+        }
+        if settings.httpsOnly, current.scheme?.lowercased() == "http", !HTTPSOnly.isExempt(host: current.host) {
+            if tab?.httpBypass.contains(current.absoluteString) == true {
+                return .allow
+            }
+            if let pending = tab?.httpsUpgradeURL, pending.host?.lowercased() == current.host?.lowercased() {
+                return .warn(.httpsFailed(pending))
+            }
+            if let https = HTTPSOnly.upgraded(current) {
+                tab?.httpsUpgradeURL = current
+                return .load(https)
+            }
+        }
+        if settings.safeBrowsing, tab?.threatBypass.contains(current.absoluteString) != true, ThreatList.shared.contains(current) {
+            return .warn(.unsafe(current))
+        }
+        return .allow
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
@@ -115,6 +164,8 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         guard let url = webView.url, url.absoluteString != "about:blank" else { return }
+        tab?.httpsUpgradeURL = nil
+        tab?.pageWarning = nil
         tab?.url = url
         tab?.errorText = nil
         session?.persist()
@@ -263,12 +314,14 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     private func sniffJSON(url: URL, webView: WKWebView) {
         guard let tab, tab.jsonDocument == nil, JSONSniffer.shouldSniff(mime: tab.lastMIME, url: url) else { return }
-        webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, 240) : ''") { sample, _ in
+        webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, 240) : ''") { [weak tab, weak webView] sample, _ in
+            guard let webView, let tab, tab.webView === webView else { return }
             let text = sample as? String ?? ""
             guard JSONSniffer.looksLikeJSON(text) else { return }
-            webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, \(JSONSniffer.byteCap)) : ''") { full, _ in
+            webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, \(JSONSniffer.byteCap)) : ''") { [weak tab, weak webView] full, _ in
                 guard let raw = full as? String, let document = JSONDocument(raw: raw) else { return }
                 DispatchQueue.main.async {
+                    guard let webView, let tab, tab.webView === webView else { return }
                     tab.jsonDocument = document
                     if webView.canGoBack == false {
                         tab.releaseWebView()
@@ -317,6 +370,13 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private func note(_ error: Error) {
         let ns = error as NSError
         if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled { return }
+        if let pending = tab?.httpsUpgradeURL {
+            tab?.pageWarning = .httpsFailed(pending)
+            tab?.httpsUpgradeURL = nil
+            tab?.errorText = nil
+            tab?.isLoading = false
+            return
+        }
         tab?.errorText = ns.localizedDescription
         tab?.isLoading = false
     }
@@ -354,11 +414,18 @@ enum PasswordPrompt {
 final class GoogleSignInCoordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let shared = GoogleSignInCoordinator()
     private var session: ASWebAuthenticationSession?
+    private var sessionToken = 0
 
     func start(url: URL) {
-        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "sathariels") { callback, _ in
+        sessionToken += 1
+        let token = sessionToken
+        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "sathariels") { [weak self] callback, _ in
             if let callback, let session = SessionRegistry.shared.keySession {
                 session.navigateFocused(to: callback)
+            }
+            DispatchQueue.main.async {
+                guard let self, self.sessionToken == token else { return }
+                self.session = nil
             }
         }
         auth.presentationContextProvider = self

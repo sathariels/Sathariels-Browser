@@ -27,8 +27,7 @@ enum WebKitFactory {
         dataStore: WKWebsiteDataStore,
         processPool: WKProcessPool,
         site: SitePermissions?,
-        ruleList: WKContentRuleList?,
-        blockingEnabled: Bool,
+        ruleLists: [WKContentRuleList],
         capturePasswords: Bool,
         pageGhost: Bool = false
     ) -> WKWebViewConfiguration {
@@ -42,7 +41,7 @@ enum WebKitFactory {
         configuration.mediaTypesRequiringUserActionForPlayback = allowsAutoplay ? [] : .all
 
         let controller = WKUserContentController()
-        if blockingEnabled, let ruleList {
+        for ruleList in ruleLists {
             controller.add(ruleList)
         }
         if let site {
@@ -79,6 +78,7 @@ enum WebKitFactory {
         }
         configuration.userContentController = controller
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        ExtensionSupport.attach(configuration)
         return configuration
     }
 
@@ -117,11 +117,14 @@ enum WebKitFactory {
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
+        let controller = webView.configuration.userContentController
         let names = objc_getAssociatedObject(webView, &handlerNamesKey) as? [String] ?? []
         for name in names {
-            webView.configuration.userContentController.removeScriptMessageHandler(forName: name)
+            controller.removeScriptMessageHandler(forName: name)
         }
-        webView.configuration.userContentController.removeAllUserScripts()
+        controller.removeAllScriptMessageHandlers()
+        controller.removeAllUserScripts()
+        controller.removeAllContentRuleLists()
         webView.removeFromSuperview()
         objc_setAssociatedObject(webView, &proxyKey, nil, .OBJC_ASSOCIATION_ASSIGN)
         objc_setAssociatedObject(webView, &handlerNamesKey, nil, .OBJC_ASSOCIATION_ASSIGN)

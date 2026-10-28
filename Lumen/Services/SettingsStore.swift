@@ -6,6 +6,10 @@ final class SettingsStore: ObservableObject {
     @Published var searchEngine: SearchEngine { didSet { save() } }
     @Published var suspendMinutes: Int { didSet { save() } }
     @Published var contentBlocking: Bool { didSet { save(); ContentBlocker.shared.applyToLiveTabs() } }
+    @Published var httpsOnly: Bool { didSet { save() } }
+    @Published var blockThirdPartyCookies: Bool { didSet { save(); ContentBlocker.shared.applyToLiveTabs() } }
+    @Published var stripTracking: Bool { didSet { save() } }
+    @Published var safeBrowsing: Bool { didSet { save() } }
     @Published var restoreSession: Bool { didSet { save(); if !restoreSession { SessionStore.shared.forget() } } }
     @Published var clipboardCapture: Bool { didSet { save(); ClipboardStore.shared.setCaptureEnabled(clipboardCapture) } }
     @Published var homePage: String { didSet { save() } }
@@ -31,6 +35,10 @@ final class SettingsStore: ObservableObject {
         } else {
             contentBlocking = defaults.bool(forKey: "contentBlocking")
         }
+        httpsOnly = defaults.object(forKey: "httpsOnly") == nil ? true : defaults.bool(forKey: "httpsOnly")
+        blockThirdPartyCookies = defaults.object(forKey: "blockThirdPartyCookies") == nil ? true : defaults.bool(forKey: "blockThirdPartyCookies")
+        stripTracking = defaults.object(forKey: "stripTracking") == nil ? true : defaults.bool(forKey: "stripTracking")
+        safeBrowsing = defaults.object(forKey: "safeBrowsing") == nil ? true : defaults.bool(forKey: "safeBrowsing")
         if defaults.object(forKey: "restoreSession") == nil {
             restoreSession = true
         } else {
@@ -75,6 +83,10 @@ final class SettingsStore: ObservableObject {
         defaults.set(searchEngine.rawValue, forKey: "searchEngine")
         defaults.set(suspendMinutes, forKey: "suspendMinutes")
         defaults.set(contentBlocking, forKey: "contentBlocking")
+        defaults.set(httpsOnly, forKey: "httpsOnly")
+        defaults.set(blockThirdPartyCookies, forKey: "blockThirdPartyCookies")
+        defaults.set(stripTracking, forKey: "stripTracking")
+        defaults.set(safeBrowsing, forKey: "safeBrowsing")
         defaults.set(restoreSession, forKey: "restoreSession")
         defaults.set(clipboardCapture, forKey: "clipboardCapture")
         defaults.set(homePage, forKey: "homePage")

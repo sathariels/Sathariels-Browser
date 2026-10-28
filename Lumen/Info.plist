@@ -32,6 +32,18 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/sathariels/Sathariels-Browser/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>$(SU_PUBLIC_ED_KEY)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Sites you allow can use the camera.</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 @main
@@ -6,6 +7,7 @@ struct SatharielsBrowserApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
+        RuleCompile.parse()
         ScreenshotLaunch.parse()
         LaunchCoordinator.shared.load()
     }
@@ -73,11 +75,22 @@ struct BrowserRoot: View {
     }
 }
 
+enum RuleCompile {
+    static var directory: URL?
+
+    static func parse() {
+        let args = CommandLine.arguments
+        guard let index = args.firstIndex(of: "--precompile-rules"), args.indices.contains(index + 1) else { return }
+        directory = URL(fileURLWithPath: args[index + 1], isDirectory: true)
+    }
+}
+
 enum ScreenshotLaunch {
     static var enabled = false
     static var url: URL?
     static var focusAddress = false
     static var readyPath: String?
+    static var memoryTabs = 0
     private static var applied = false
     private static var placed = false
 
@@ -92,7 +105,10 @@ enum ScreenshotLaunch {
         }
         focusAddress = args.contains("--focus-address")
         readyPath = value(after: "--screenshot-ready")
-        enabled = url != nil || focusAddress || readyPath != nil
+        if let raw = value(after: "--memory-tabs"), let count = Int(raw) {
+            memoryTabs = min(12, max(0, count))
+        }
+        enabled = url != nil || focusAddress || readyPath != nil || memoryTabs > 0
     }
 
     static func apply(to session: BrowserSession) {
@@ -100,6 +116,11 @@ enum ScreenshotLaunch {
         applied = true
         if let url {
             session.navigateFocused(to: url)
+        }
+        if memoryTabs > 1 {
+            for _ in 1..<memoryTabs {
+                session.newTab(url: URL(string: "about:blank"))
+            }
         }
         let delay: TimeInterval = url == nil ? 0.8 : 6
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
@@ -134,12 +155,23 @@ enum ScreenshotLaunch {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var updaterController: SPUStandardUpdaterController?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A SwiftUI window that is not key never installs a field editor, so the
         // address bar ignores typing until the app is a normal foreground app.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
-        ContentBlocker.shared.prepare()
+        if let directory = RuleCompile.directory {
+            Task { @MainActor in
+                await ContentBlocker.shared.precompileBundled(to: directory)
+                exit(0)
+            }
+            return
+        }
+        startUpdaterIfSigned()
+        ExtensionSupport.restoreSaved()
+        ThreatList.shared.prepare()
         MemoryPressureCenter.shared.onPressure = { critical in
             SessionRegistry.shared.suspendForMemory(critical: critical)
         }
@@ -151,6 +183,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { false }
+
+    func checkForUpdates() {
+        updaterController?.checkForUpdates(nil)
+    }
+
+    /// Sparkle stays unloaded until a release embeds SUPublicEDKey. Dev builds skip the
+    /// updater process so an empty key does not start background feed checks.
+    private func startUpdaterIfSigned() {
+        let key = (Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !key.isEmpty, !key.hasPrefix("$(") else { return }
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    }
 }
 
 struct BrowserActions {
@@ -190,6 +235,11 @@ struct SatharielsBrowserCommands: Commands {
     @FocusedValue(\.browserActions) private var actions
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") {
+                (NSApp.delegate as? AppDelegate)?.checkForUpdates()
+            }
+        }
         CommandGroup(replacing: .newItem) {
             Button("New Tab") { actions?.newTab() }
                 .keyboardShortcut("t", modifiers: .command)
@@ -203,6 +253,7 @@ struct SatharielsBrowserCommands: Commands {
             .keyboardShortcut("n", modifiers: [.command, .shift])
             Button("Close Tab") { actions?.closeTab() }
                 .keyboardShortcut("w", modifiers: .command)
+            Button("Load Extension Folder…") { ExtensionSupport.pickFolder() }
         }
         CommandGroup(after: .toolbar) {
             Button("Open Location") { actions?.focusAddress() }

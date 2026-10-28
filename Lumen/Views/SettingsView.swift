@@ -107,7 +107,7 @@ struct SettingsView: View {
     private var passwords: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "Passwords", color: LumenTheme.lime)
-            Text("WKWebView cannot read Safari's iCloud Passwords for arbitrary sites. Sathariels Browser saves logins you confirm into the Keychain as internet passwords. They are never written to JSON or logs. Synchronizable items can join iCloud Keychain when that is turned on.")
+            Text("WKWebView cannot read Safari's iCloud Passwords for arbitrary sites. Sathariels Browser saves logins you confirm into the Keychain as internet passwords. Filling one asks for Touch ID, then the device password. They are never written to JSON or logs. Synchronizable items can join iCloud Keychain when that is turned on.")
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.textDim)
             if accounts.isEmpty {
@@ -262,8 +262,22 @@ struct SettingsView: View {
             Text(blocker.phaseLabel)
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.text)
-            Text("A small bundled rule list. Sign-in pages on accounts.google.com are excluded. This is not a substitute for a full filter list.")
+            Text("EasyList and EasyPrivacy, refreshed at most once a day. Sign-in pages on accounts.google.com are excluded.")
                 .font(LumenTheme.monoSmall)
+                .foregroundStyle(LumenTheme.textDim)
+            Toggle("HTTPS-only", isOn: $settings.httpsOnly)
+                .font(LumenTheme.monoSmall)
+            Text("On by default. Plain http loads are upgraded. Localhost and 127.0.0.1 stay on http. If HTTPS fails, you can continue anyway.")
+                .font(LumenTheme.micro)
+                .foregroundStyle(LumenTheme.textDim)
+            Toggle("Block third-party cookies", isOn: $settings.blockThirdPartyCookies)
+                .font(LumenTheme.monoSmall)
+            Toggle("Strip tracking parameters", isOn: $settings.stripTracking)
+                .font(LumenTheme.monoSmall)
+            Toggle("Warn about unsafe sites", isOn: $settings.safeBrowsing)
+                .font(LumenTheme.monoSmall)
+            Text("Checks a local hash list from URLhaus and OpenPhish. The address you open is not sent out.")
+                .font(LumenTheme.micro)
                 .foregroundStyle(LumenTheme.textDim)
         }
     }

@@ -30,6 +30,14 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
+      - name: Prepare Sparkle signing key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_WORK_DIR: ${{ runner.temp }}/sparkle-work
+        run: |
+          echo "::add-mask::${SPARKLE_PRIVATE_KEY}"
+          bash ./scripts/sparkle-prepare.sh
+
       - name: Build, ad-hoc sign, and package
         run: ./scripts/build-app.sh
 
@@ -39,6 +47,11 @@ jobs:
           test -d "dist/Sathariels Browser.app"
           test -f "dist/Sathariels Browser-macos.zip"
           test -f "dist/Sathariels Browser.dmg"
+
+      - name: Sample RAM
+        continue-on-error: true
+        timeout-minutes: 8
+        run: bash ./scripts/sample-ram.sh "dist/Sathariels Browser.app"
 
       - name: Resolve release tag
         id: tag
@@ -54,6 +67,30 @@ jobs:
             exit 1
           fi
 
+      - name: Sign the update and write the appcast
+        if: env.SPARKLE_SIGNING == '1'
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.name }}
+        run: |
+          set -euo pipefail
+          VERSION="${RELEASE_TAG#v}"
+          bash ./scripts/sparkle-appcast.sh \
+            "$PWD/dist/Sathariels Browser-macos.zip" \
+            "$VERSION" \
+            "$RELEASE_TAG" \
+            "$SPARKLE_KEY_FILE" \
+            "$SPARKLE_BIN" \
+            "$PWD/dist/appcast.xml"
+          test -s "$PWD/dist/appcast.xml"
+
+      - name: Stage release files
+        run: |
+          mkdir -p dist/publish
+          cp "dist/Sathariels Browser-macos.zip" dist/publish/
+          cp "dist/Sathariels Browser.dmg" dist/publish/
+          if [ -f dist/appcast.xml ]; then cp dist/appcast.xml dist/publish/; fi
+          ls -lh dist/publish
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -61,13 +98,11 @@ jobs:
           name: Sathariels Browser ${{ steps.tag.outputs.name }}
           fail_on_unmatched_files: true
           generate_release_notes: true
-          files: |
-            dist/Sathariels Browser-macos.zip
-            dist/Sathariels Browser.dmg
+          files: dist/publish/*
           body: |
             Ad-hoc signed macOS build of Sathariels Browser.
 
-            Download `Sathariels Browser-macos.zip` or `Sathariels Browser.dmg`, then drag `Sathariels Browser.app` to `/Applications`.
+            Download `Sathariels Browser-macos.zip` or `Sathariels Browser.dmg`, then drag `Sathariels Browser.app` to `/Applications`. Later versions are offered from the application menu, Check for Updates….
 
             The signature is ad-hoc, so Gatekeeper does not treat it as a Developer ID app. The first time you open it, right-click the app, choose Open, then Open again. If macOS only offers Move to Trash, use System Settings → Privacy & Security → Open Anyway.
         env:

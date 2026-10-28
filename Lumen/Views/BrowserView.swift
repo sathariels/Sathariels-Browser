@@ -139,32 +139,35 @@ struct BrowserView: View {
 
 struct TabStrip: View {
     @ObservedObject var session: BrowserSession
+    @ObservedObject private var extensions = ExtensionMenuModel.shared
     @State private var leading: CGFloat = 76
+    @State private var stripHover = false
+    @State private var lockedWidth: CGFloat?
+    @State private var laidOutWidth: CGFloat = 190
+
+    private let tabMax: CGFloat = 240
+    private let tabMin: CGFloat = 36
+    private let gap: CGFloat = 6
 
     var body: some View {
         HStack(spacing: 0) {
-            ScrollViewReader { scroll in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(session.tabs) { tab in
-                        TabChip(session: session, tab: tab).id(tab.id)
+            GeometryReader { geo in
+                let pins = session.tabs.filter(\.pinned)
+                let loose = session.tabs.filter { !$0.pinned && !session.isCollapsed($0) }
+                let reserved = CGFloat(pins.count) * 40 + CGFloat(max(pins.count - 1, 0)) * gap + groupChrome + 36
+                let available = max(0, geo.size.width - reserved - 8)
+                let natural = loose.isEmpty ? tabMax : min(tabMax, max(tabMin, (available - gap * CGFloat(max(loose.count - 1, 0))) / CGFloat(loose.count)))
+                let width = lockedWidth.map { min(natural, $0) } ?? natural
+                let needsScroll = !loose.isEmpty && CGFloat(loose.count) * tabMin + gap * CGFloat(loose.count - 1) > available
+                strip(pins: pins, loose: loose, tabWidth: needsScroll ? tabMin : width, scroll: needsScroll)
+                    .onChange(of: loose.count) { old, new in
+                        if new < old && stripHover {
+                            lockedWidth = laidOutWidth
+                        }
                     }
-                    Button {
-                        session.newTab()
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(LumenTheme.activeText)
-                            .frame(width: 28, height: 28)
+                    .onChange(of: natural) { _, value in
+                        if lockedWidth == nil { laidOutWidth = value }
                     }
-                    .buttonStyle(.plain)
-                    .help("New tab")
-                }
-                .padding(.leading, 4)
-            }
-            .onChange(of: session.focusedTab?.id) { _, id in
-                if let id { scroll.scrollTo(id, anchor: .center) }
-            }
             }
             if session.isPrivate {
                 Text("PRIVATE")
@@ -172,49 +175,147 @@ struct TabStrip: View {
                     .foregroundStyle(LumenTheme.coral)
                     .padding(.horizontal, 8)
             }
+            extensionButton
         }
         .padding(.leading, leading)
         .frame(height: 39, alignment: .bottom)
         .background(WindowDrag())
         .background(TrafficInset(leading: $leading))
+        .onHover { inside in
+            stripHover = inside
+            if !inside { lockedWidth = nil }
+        }
         .overlay(alignment: .bottom) {
             Rectangle().fill(LumenTheme.border).frame(height: 1)
         }
+    }
+
+    private var groupChrome: CGFloat {
+        session.groups.reduce(0) { partial, group in
+            let visible = session.tabs.contains { $0.groupID == group.id && !$0.pinned }
+            return partial + (visible ? 92 : 0)
+        }
+    }
+
+    private func strip(pins: [BrowserTab], loose: [BrowserTab], tabWidth: CGFloat, scroll: Bool) -> some View {
+        let row = HStack(spacing: gap) {
+            ForEach(pins) { tab in
+                TabChip(session: session, tab: tab, width: 40, compact: true)
+            }
+            ForEach(session.groups) { group in
+                if session.tabs.contains(where: { $0.groupID == group.id && !$0.pinned }) {
+                    GroupChip(session: session, group: group)
+                    if !group.collapsed {
+                        ForEach(loose.filter { $0.groupID == group.id }) { tab in
+                            TabChip(session: session, tab: tab, width: tabWidth, compact: tabWidth < 72)
+                        }
+                    }
+                }
+            }
+            ForEach(loose.filter { $0.groupID == nil }) { tab in
+                TabChip(session: session, tab: tab, width: tabWidth, compact: tabWidth < 72)
+            }
+            Button {
+                session.newTab()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(LumenTheme.activeText)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .help("New tab")
+        }
+        .padding(.leading, 4)
+        return Group {
+            if scroll {
+                ScrollView(.horizontal, showsIndicators: false) { row }
+            } else {
+                row
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private var extensionButton: some View {
+        Menu {
+            if extensions.available {
+                if extensions.names.isEmpty {
+                    Text("No folders loaded")
+                }
+                ForEach(extensions.names, id: \.self) { name in
+                    Text(name)
+                }
+                Button("Load Folder…") { ExtensionSupport.pickFolder() }
+            } else {
+                Text("Needs macOS 15.4")
+            }
+        } label: {
+            Image(systemName: "puzzlepiece.extension")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(LumenTheme.tabText)
+                .frame(width: 28, height: 28)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Web extensions")
+    }
+}
+
+struct GroupChip: View {
+    @ObservedObject var session: BrowserSession
+    let group: TabGroup
+
+    var body: some View {
+        Button {
+            session.setGroupCollapsed(group.id, !group.collapsed)
+        } label: {
+            HStack(spacing: 4) {
+                Rectangle().fill(LumenTheme.tabColor(group.colorIndex)).frame(width: 8, height: 8)
+                Text(group.name)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(LumenTheme.tabText)
+                    .lineLimit(1)
+                Text(group.collapsed ? "+" : "–")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(LumenTheme.textDim)
+            }
+            .padding(.horizontal, 6)
+            .frame(height: 32)
+        }
+        .buttonStyle(.plain)
+        .background(LumenTheme.tabIdle)
+        .clipShape(RoundedRectangle(cornerRadius: 9))
+        .help(group.collapsed ? "Expand group" : "Collapse group")
     }
 }
 
 struct TabChip: View {
     @ObservedObject var session: BrowserSession
     @ObservedObject var tab: BrowserTab
+    var width: CGFloat = 190
+    var compact: Bool = false
     @State private var hover = false
 
     var body: some View {
         let active = session.focusedTab?.id == tab.id
-        HStack(spacing: 8) {
-            Button {
-                session.select(tab.id)
-            } label: {
-                HStack(spacing: 8) {
-                    if let image = tab.favicon {
-                        Image(nsImage: image)
-                            .resizable()
-                            .frame(width: 14, height: 14)
-                    } else {
-                        Image(systemName: "leaf.fill")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(LumenTheme.markLeaf)
-                            .frame(width: 18, height: 18)
-                            .background(LumenTheme.mark)
-                    }
-                    Text(tab.title.isEmpty ? "New tab" : tab.title)
-                        .font(.system(size: 12, weight: .regular, design: .monospaced))
-                        .foregroundStyle(active ? LumenTheme.activeText : LumenTheme.tabText)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                }
+        let showClose = !tab.pinned && (active || hover)
+        HStack(spacing: compact ? 4 : 8) {
+            favicon
+            if !compact && !tab.pinned {
+                Text(tab.title.isEmpty ? "New tab" : tab.title)
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .foregroundStyle(active ? LumenTheme.activeText : LumenTheme.tabText)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            if active || hover {
+        }
+        .padding(.horizontal, tab.pinned ? 6 : 8)
+        .contentShape(Rectangle())
+        .onTapGesture { session.select(tab.id) }
+        .overlay(alignment: .trailing) {
+            if showClose {
                 Button {
                     session.closeTab(tab.id)
                 } label: {
@@ -222,39 +323,74 @@ struct TabChip: View {
                         .font(.system(size: 16, weight: .regular))
                         .foregroundStyle(Color(red: 135 / 255, green: 145 / 255, blue: 139 / 255))
                         .frame(width: 16, height: 16)
+                        .background(active ? LumenTheme.toolbar : LumenTheme.bg)
                 }
                 .buttonStyle(.plain)
+                .padding(.trailing, 4)
                 .help("Close tab")
             }
         }
-        .padding(.horizontal, 10)
-        .frame(width: 190, height: 32)
+        .frame(width: width, height: 32)
         .background(active ? LumenTheme.toolbar : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 9))
         .overlay(alignment: .top) {
-            Capsule().fill(active ? LumenTheme.accent : Color.clear).frame(width: 32, height: 2)
-        }
-        .overlay(alignment: .trailing) {
-            Color.clear.frame(width: 1)
+            Capsule().fill(active ? LumenTheme.accent : Color.clear).frame(width: min(32, width - 8), height: 2)
         }
         .contentShape(Rectangle())
         .onHover { hover = $0 }
-        .contextMenu {
-            Button("Open in Split") { session.openInSplit(tab.id) }
-            Button("Reload") { session.select(tab.id); session.reloadFocused() }
-            Button("Copy URL") {
-                if let url = tab.url?.absoluteString {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url, forType: .string)
-                }
+        .contextMenu { tabMenu }
+    }
+
+    @ViewBuilder
+    private var favicon: some View {
+        if let image = tab.favicon {
+            Image(nsImage: image)
+                .resizable()
+                .frame(width: 14, height: 14)
+        } else {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(LumenTheme.markLeaf)
+                .frame(width: 18, height: 18)
+                .background(LumenTheme.mark)
+        }
+    }
+
+    @ViewBuilder
+    private var tabMenu: some View {
+        Button("Open in Split") { session.openInSplit(tab.id) }
+        Button("Reload") { session.select(tab.id); session.reloadFocused() }
+        Button("Copy URL") {
+            if let url = tab.url?.absoluteString {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(url, forType: .string)
             }
-            Menu("Color") {
-                ForEach(0..<LumenTheme.tabPalette.count, id: \.self) { index in
-                    Button("Tag \(index + 1)") { tab.colorIndex = index }
-                }
+        }
+        Button(tab.pinned ? "Unpin" : "Pin") { session.setPinned(tab.id, !tab.pinned) }
+        Button("New Group…") { TabGroupPrompt.create(session: session, tabID: tab.id) }
+        Menu("Color") {
+            ForEach(0..<LumenTheme.tabPalette.count, id: \.self) { index in
+                Button("Tag \(index + 1)") { tab.colorIndex = index }
             }
+        }
+        if !tab.pinned {
             Button("Close") { session.closeTab(tab.id) }
         }
+    }
+}
+
+enum TabGroupPrompt {
+    static func create(session: BrowserSession, tabID: UUID) {
+        let alert = NSAlert()
+        alert.messageText = "New tab group"
+        alert.informativeText = "Collapsed groups drop their web views until you open the group."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        field.stringValue = "Group"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Create")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        session.makeGroup(named: field.stringValue, tabID: tabID)
     }
 }
 
@@ -368,7 +504,9 @@ struct PaneContent: View {
 
     var body: some View {
         Group {
-            if let document = tab.jsonDocument {
+            if let warning = tab.pageWarning {
+                PageWarningView(warning: warning) { tab.allowCurrentWarning() }
+            } else if let document = tab.jsonDocument {
                 JSONTreeView(tab: tab, document: document)
             } else if let webView = tab.webView {
                 viewportFrame(webView: webView)
@@ -407,6 +545,52 @@ struct PaneContent: View {
         } else {
             WebViewRepresentable(webView: webView)
                 .id(ObjectIdentifier(webView))
+        }
+    }
+}
+
+struct PageWarningView: View {
+    let warning: PageWarning
+    let proceed: () -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(LumenTheme.title)
+                .foregroundStyle(LumenTheme.text)
+            Text(detail)
+                .font(LumenTheme.monoSmall)
+                .foregroundStyle(LumenTheme.textDim)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
+                .frame(maxWidth: 520)
+            Button("Continue anyway", action: proceed)
+                .buttonStyle(LumenButtonStyle(tint: tint))
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var title: String {
+        switch warning {
+        case .httpsFailed: return "HTTPS is unavailable"
+        case .unsafe: return "This site looks unsafe"
+        }
+    }
+
+    private var detail: String {
+        switch warning {
+        case .httpsFailed(let url):
+            return "\(url.absoluteString) did not load over HTTPS."
+        case .unsafe(let url):
+            return "\(url.host ?? url.absoluteString) matches a local phishing or malware list. The address was not sent to a lookup service."
+        }
+    }
+
+    private var tint: Color {
+        switch warning {
+        case .httpsFailed: return LumenTheme.amber
+        case .unsafe: return LumenTheme.coral
         }
     }
 }
@@ -460,6 +644,9 @@ struct KeyWindowProbe: NSViewRepresentable {
 
     final class ProbeView: NSView {
         weak var session: BrowserSession?
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             NotificationCenter.default.removeObserver(self)
