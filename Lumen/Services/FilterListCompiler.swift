@@ -136,7 +136,11 @@ enum FilterListCompiler {
                     let negated = token.hasPrefix("~")
                     let host = (negated ? String(token.dropFirst()) : token).lowercased()
                     guard hostOK(host) else { return nil }
-                    (negated ? exclude : include).append("*" + host)
+                    if negated {
+                        exclude.append("*" + host)
+                    } else {
+                        include.append("*" + host)
+                    }
                 }
                 if !include.isEmpty { trigger["if-domain"] = include }
                 if !exclude.isEmpty { trigger["unless-domain"] = exclude }
