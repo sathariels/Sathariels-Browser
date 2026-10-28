@@ -18,8 +18,8 @@ quit_app() {
   sleep 0.4
 }
 
-window_id() {
-  swift - <<'SWIFT'
+WINDOW_BIN="$OUT/window-id"
+cat > "$OUT/window-id.swift" <<'SWIFT'
 import CoreGraphics
 import Foundation
 let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
@@ -38,6 +38,10 @@ for window in info {
 }
 exit(1)
 SWIFT
+swiftc -O -o "$WINDOW_BIN" "$OUT/window-id.swift"
+
+window_id() {
+  "$WINDOW_BIN"
 }
 
 capture_window() {
@@ -61,29 +65,42 @@ capture_window() {
   [[ "$bytes" -gt 10000 ]]
 }
 
+container_ready() {
+  local home="${HOME}/Library/Containers/com.sathariels.browser/Data/Library/Application Support/screenshot-ready"
+  [[ -f "$home" ]]
+}
+
 launch_and_capture() {
   local name="$1"
-  shift
+  local settle="$2"
+  shift 2
   local ready="$OUT/$name.ready"
   rm -f "$ready" "$OUT/$name.png"
+  rm -f "${HOME}/Library/Containers/com.sathariels.browser/Data/Library/Application Support/screenshot-ready" || true
   quit_app
   echo "Launching for $name"
-  open "$APP" --stdout "$OUT/$name.log" --stderr "$OUT/$name.log" --args --screenshot-ready "$ready" "$@"
-  for _ in $(seq 1 70); do
-    [[ -f "$ready" ]] && break
+  open -n "$APP" --args --screenshot-ready "$ready" "$@"
+  local appeared=""
+  for _ in $(seq 1 40); do
+    if [[ -f "$ready" ]] || container_ready || window_id >/dev/null 2>&1; then
+      appeared=1
+      break
+    fi
     sleep 0.5
   done
-  if [[ ! -f "$ready" ]]; then
-    echo "Timed out waiting for $name" >&2
-    echo "----- log -----" >&2
-    cat "$OUT/$name.log" >&2 || true
+  if [[ -z "$appeared" ]]; then
+    echo "App window did not appear for $name" >&2
+    ps aux | grep -i "[S]athariel" || true
+    ls -lt "${HOME}/Library/Logs/DiagnosticReports" 2>/dev/null | head -20 || true
+    log show --last 2m --style compact --predicate 'process CONTAINS "Sathariel"' 2>/dev/null | tail -80 || true
     exit 1
   fi
-  sleep 0.8
+  echo "Window is up; waiting ${settle}s for $name"
+  sleep "$settle"
   capture_window "$OUT/$name.png"
   quit_app
 }
 
-launch_and_capture "screenshot_new_tab"
-launch_and_capture "screenshot_address_bar" --screenshot-url "https://example.com" --focus-address
+launch_and_capture "screenshot_new_tab" 2
+launch_and_capture "screenshot_address_bar" 8 --screenshot-url "https://example.com" --focus-address
 echo "Screenshots are in $OUT"

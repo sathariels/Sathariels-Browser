@@ -107,8 +107,15 @@ enum ScreenshotLaunch {
                 session.focusAddress()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                guard let readyPath else { return }
-                try? Data("ready\n".utf8).write(to: URL(fileURLWithPath: readyPath))
+                let payload = Data("ready\n".utf8)
+                if let readyPath {
+                    try? payload.write(to: URL(fileURLWithPath: readyPath))
+                }
+                if let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+                    try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    try? payload.write(to: folder.appendingPathComponent("screenshot-ready"))
+                }
+                NSLog("SCREENSHOT_READY")
             }
         }
     }
