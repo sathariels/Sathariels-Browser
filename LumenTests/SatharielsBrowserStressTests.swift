@@ -23,6 +23,7 @@ final class SatharielsBrowserStressTests: XCTestCase {
         }
         let urls = Self.heavySites
         XCTAssertGreaterThanOrEqual(urls.count, 50)
+        report("heavy", "baseline", status: "pass", sample: StressSample.take())
         var opened = 0
         for mark in [10, 25, 50] {
             while opened < mark {
@@ -31,7 +32,7 @@ final class SatharielsBrowserStressTests: XCTestCase {
             }
             waitUntilSettled(session, timeout: mark == 50 ? 45 : 25)
             let live = session.tabs.filter { $0.webView != nil }.count
-            report("heavy", "tabs\(mark)", status: live >= mark ? "pass" : "fail", extra: [
+            report("heavy", "tabs\(mark)", status: live >= mark ? "pass" : "fail", sample: StressSample.take(), extra: [
                 "live_webviews": "\(live)",
                 "tabs": "\(session.tabs.count)",
             ])
@@ -47,7 +48,7 @@ final class SatharielsBrowserStressTests: XCTestCase {
         pump(8)
         let after = session.tabs.filter { $0.webView != nil }.count
         let slept = max(0, before - after)
-        report("heavy", "after-sleep", status: slept > 0 ? "pass" : "fail", extra: [
+        report("heavy", "after-sleep", status: slept > 0 ? "pass" : "fail", sample: StressSample.take(), extra: [
             "live_webviews": "\(after)",
             "slept": "\(slept)",
             "before": "\(before)",
@@ -104,10 +105,11 @@ final class SatharielsBrowserStressTests: XCTestCase {
         XCTAssertNotNil(opener)
         let handlersBefore = WebKitFactory.installedHandlerNames(for: opener!.configuration.userContentController)
         var opened = 0
+        var lostAt = -1
         for index in 0..<100 {
             let script = "window.open('about:blank','stress\(index)','width=420,height=320');"
             opener?.evaluateJavaScript(script, completionHandler: nil)
-            let deadline = Date().addingTimeInterval(1.2)
+            let deadline = Date().addingTimeInterval(2)
             while Date() < deadline && session.popups.openCount == 0 {
                 pump(0.05)
             }
@@ -115,14 +117,25 @@ final class SatharielsBrowserStressTests: XCTestCase {
             session.popups.closeAll()
             let extras = session.tabs.map(\.id).filter { $0 != openerTab }
             for id in extras { session.closeTab(id) }
+            let names = WebKitFactory.installedHandlerNames(for: opener!.configuration.userContentController)
+            if names != handlersBefore {
+                lostAt = index
+                break
+            }
         }
         let handlersAfter = WebKitFactory.installedHandlerNames(for: opener!.configuration.userContentController)
-        report("popup", "100", status: opened == 100 && handlersAfter == handlersBefore ? "pass" : "fail", extra: [
+        let crashed = !Self.recentCrashReports().isEmpty
+        let status = lostAt < 0 && !crashed && opened == 100 ? "pass" : "fail"
+        report("popup", "100", status: status, extra: [
             "opened": "\(opened)",
-            "handlers": "\(handlersAfter.count)",
+            "lost_at": "\(lostAt)",
+            "handlers": handlersAfter.sorted().joined(separator: "|"),
+            "opener_delegate": opener?.navigationDelegate == nil ? "nil" : "set",
+            "crash_reports": crashed ? "1" : "0",
         ])
+        XCTAssertEqual(lostAt, -1, "closing a popup removed the opener's script handlers")
+        XCTAssertFalse(crashed)
         XCTAssertEqual(opened, 100)
-        XCTAssertEqual(handlersAfter, handlersBefore)
         XCTAssertEqual(session.popups.openCount, 0)
     }
 
