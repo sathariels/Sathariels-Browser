@@ -195,33 +195,37 @@ final class SatharielsBrowserStressTests: XCTestCase {
         tab.toggleReader()
         pump(2)
         let blocks = tab.reader?.blocks.count ?? 0
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
-            styleMask: [.titled, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        if let page = tab.reader {
-            window.contentView = NSHostingView(rootView: ReaderView(tab: tab, page: page))
-            window.makeKeyAndOrderFront(nil)
-        }
-        pump(1)
         let before = StressSample.take()
         report("reader", "extracted", status: blocks >= 8 ? "pass" : "fail", sample: before, extra: ["blocks": "\(blocks)"])
-        if let scroll = Self.findScrollView(window.contentView) {
-            let height = scroll.documentView?.bounds.height ?? 0
-            var y: CGFloat = 0
-            while y < height {
-                scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
-                scroll.reflectScrolledClipView(scroll.contentView)
-                y += 700
-                pump(0.15)
+        autoreleasepool {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+                styleMask: [.titled, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.isReleasedWhenClosed = false
+            if let page = tab.reader {
+                window.contentView = NSHostingView(rootView: ReaderView(tab: tab, page: page))
+                window.makeKeyAndOrderFront(nil)
             }
+            pump(1)
+            if let scroll = Self.findScrollView(window.contentView) {
+                let height = scroll.documentView?.bounds.height ?? 0
+                var y: CGFloat = 0
+                while y < height {
+                    scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
+                    scroll.reflectScrolledClipView(scroll.contentView)
+                    y += 700
+                    pump(0.15)
+                }
+            }
+            pump(1)
+            window.contentView = nil
+            window.close()
         }
-        pump(1.5)
         let afterScroll = StressSample.take()
         report("reader", "scrolled", status: "pass", sample: afterScroll, extra: ["blocks": "\(blocks)"])
-        window.close()
 
         let files = [
             "https://proof.ovh.net/files/10Mb.dat",
