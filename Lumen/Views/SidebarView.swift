@@ -28,9 +28,11 @@ struct SidebarView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Rectangle()
-                .fill(session.isPrivate ? LumenTheme.coral : LumenTheme.accent)
-                .frame(width: 10, height: 10)
+            Image("brand-mark")
+                .resizable()
+                .renderingMode(.template)
+                .frame(width: 14, height: 14)
+                .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.accent)
             Text(session.isPrivate ? "PRIVATE" : "SATHARIELS")
                 .font(LumenTheme.micro)
                 .tracking(1.6)

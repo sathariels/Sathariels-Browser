@@ -49,6 +49,9 @@ def write_png(path: Path, size: int) -> None:
 
 def write_icons() -> None:
     iconset = APP / "Assets.xcassets" / "AppIcon.appiconset"
+    existing = iconset / "icon_512x512_2x.png"
+    if existing.exists() and existing.stat().st_size > 1000:
+        return
     iconset.mkdir(parents=True, exist_ok=True)
     specs = [
         (16, "1x", "16x16"),
@@ -278,7 +281,7 @@ def write_project() -> None:
         "CODE_SIGNING_ALLOWED": "YES",
         "CODE_SIGNING_REQUIRED": "YES",
         "COMBINE_HIDPI_IMAGES": "YES",
-        "CURRENT_PROJECT_VERSION": "0.7.1",
+        "CURRENT_PROJECT_VERSION": "0.7.2",
         "DEVELOPMENT_TEAM": '""',
         "ENABLE_APP_SANDBOX": "YES",
         "ENABLE_HARDENED_RUNTIME": "NO",
@@ -288,7 +291,7 @@ def write_project() -> None:
         "INFOPLIST_FILE": "Lumen/Info.plist",
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks"',
         "OTHER_LDFLAGS": '"-lsqlite3"',
-        "MARKETING_VERSION": "0.7.1",
+        "MARKETING_VERSION": "0.7.2",
         "SWIFT_OBJC_BRIDGING_HEADER": "Lumen/Support/Lumen-Bridging-Header.h",
         "SU_PUBLIC_ED_KEY": '""',
         "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser",
