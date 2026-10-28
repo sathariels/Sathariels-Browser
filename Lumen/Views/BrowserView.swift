@@ -382,11 +382,11 @@ struct TabChip: View {
                 .resizable()
                 .frame(width: 14, height: 14)
         } else {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(LumenTheme.markLeaf)
-                .frame(width: 18, height: 18)
-                .background(LumenTheme.mark)
+            Image("brand-mark")
+                .resizable()
+                .renderingMode(.template)
+                .foregroundStyle(LumenTheme.accent)
+                .frame(width: 14, height: 14)
         }
     }
 
