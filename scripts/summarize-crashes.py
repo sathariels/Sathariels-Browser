@@ -6,10 +6,30 @@ import sys
 from pathlib import Path
 
 
+def payloads(text: str) -> list:
+    decoder = json.JSONDecoder()
+    found = []
+    index = 0
+    while index < len(text):
+        while index < len(text) and text[index] not in "{[":
+            index += 1
+        if index >= len(text):
+            break
+        try:
+            value, end = decoder.raw_decode(text, index)
+        except json.JSONDecodeError:
+            index += 1
+            continue
+        if isinstance(value, dict):
+            found.append(value)
+        index = end
+    return found
+
+
 def summarize(path: Path) -> None:
     text = path.read_text(encoding="utf-8", errors="replace")
-    start = text.find("{")
-    payload = json.loads(text[start:] if start >= 0 else text)
+    decoded = payloads(text)
+    payload = next((item for item in decoded if "threads" in item or "exception" in item), decoded[-1] if decoded else {})
     exc = payload.get("exception") or {}
     term = payload.get("termination") or {}
     print(path)

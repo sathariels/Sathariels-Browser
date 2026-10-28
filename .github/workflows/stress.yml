@@ -28,7 +28,9 @@ jobs:
         env:
           STRESS_REPORT: ${{ github.workspace }}/stress-report.txt
         run: |
-          rm -f "$STRESS_REPORT"
+          rm -f "$STRESS_REPORT" webkit-timeline.txt
+          python3 scripts/sample-host-ram.py --watch webkit-timeline.txt &
+          sampler=$!
           set +e
           xcodebuild test \
             -project SatharielsBrowser.xcodeproj \
@@ -44,7 +46,11 @@ jobs:
             ENABLE_HARDENED_RUNTIME=NO \
             DEVELOPMENT_TEAM=""
           echo "xcodebuild_exit=$?" >> "$GITHUB_OUTPUT"
+          kill "$sampler" >/dev/null 2>&1 || true
           set -e
+          echo
+          echo "===== WEBKIT TIMELINE ====="
+          python3 scripts/sample-host-ram.py webkit-timeline.txt || true
           echo
           echo "===== STRESS TABLE ====="
           if [ -f "$STRESS_REPORT" ]; then
@@ -86,7 +92,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: stress-report
-          path: stress-report.txt
+          path: |
+            stress-report.txt
+            webkit-timeline.txt
           if-no-files-found: warn
 
       - name: Fail if the harness failed
