@@ -69,36 +69,12 @@ jobs:
         run: |
           echo "===== CRASH REPORTS ====="
           dir="$HOME/Library/Logs/DiagnosticReports"
+          dest="${RUNNER_TEMP:-/tmp}/sathariels-crashes"
+          mkdir -p "$dest"
           if [ -d "$dir" ]; then
-            find "$dir" -type f \( -name '*Sathariels*' -o -name '*Browser*' \) -mmin -180 -print | while read -r file; do
-              echo "----- $file -----"
-              python3 - "$file" <<'PY'
-import json, sys
-path = sys.argv[1]
-text = open(path, encoding="utf-8", errors="replace").read()
-start = text.find("{")
-payload = json.loads(text[start:] if start >= 0 else text)
-exc = payload.get("exception") or {}
-term = payload.get("termination") or {}
-print("exception", exc.get("type"), exc.get("signal"), exc.get("codes"))
-print("termination", term.get("indicator"), term.get("namespace"), term.get("reasons"))
-images = {img.get("name"): img.get("base") for img in payload.get("usedImages") or [] if isinstance(img, dict)}
-for thread in payload.get("threads") or []:
-    if not thread.get("triggered"):
-        continue
-    print("triggered", thread.get("queue"), thread.get("name"))
-    for frame in (thread.get("frames") or [])[:12]:
-        image = frame.get("imageIndex")
-        name = ""
-        if isinstance(image, int) and image < len(payload.get("usedImages") or []):
-            name = (payload["usedImages"][image] or {}).get("name", "")
-        symbol = frame.get("symbol") or hex(frame.get("imageOffset") or 0)
-        print(f"  {name} {symbol}")
-PY
-            done
-          else
-            echo "No DiagnosticReports directory."
+            find "$dir" -type f -mmin -180 -name '*Sathariels*' -exec cp {} "$dest/" \;
           fi
+          python3 scripts/summarize-crashes.py "$dest" || true
           note="$HOME/Library/Containers/com.sathariels.browser/Data/Library/Application Support/Sathariels Browser/crash-note.txt"
           if [ -f "$note" ]; then
             echo "===== crash-note.txt ====="
