@@ -63,7 +63,7 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
         guard let data = resumeData(id), let webView = SessionRegistry.shared.keySession?.focusedTab?.webView else { return }
         webView.resumeDownload(fromResumeData: data) { [weak self] download in
             DispatchQueue.main.async {
-                guard let self, let download else { return }
+                guard let self else { return }
                 let row = self.rows.first { $0.id == id }
                 self.attach(download, id: id, filename: row?.filename ?? "Download", source: row?.source, tabID: row?.tabID, state: .active)
             }
