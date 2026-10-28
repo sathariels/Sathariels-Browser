@@ -88,9 +88,15 @@ private struct ReaderImage: View {
         guard let url = URL(string: string) else { return nil }
         var request = URLRequest(url: url)
         request.timeoutInterval = 20
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-              data.count < 12_000_000 else { return nil }
+        let job = ImageLoad()
+        let data: Data? = await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                job.begin(request: request, continuation: continuation)
+            }
+        } onCancel: {
+            job.cancel()
+        }
+        guard !Task.isCancelled, let data else { return nil }
         return thumbnail(data, maxPixel: maxPixel)
     }
 
@@ -103,5 +109,57 @@ private struct ReaderImage: View {
         ]
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
         return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+    }
+}
+
+/// Cancels a capped image fetch when the reader row leaves the screen.
+private final class ImageLoad: @unchecked Sendable {
+    private let lock = NSLock()
+    private var load: BoundedDataLoad?
+    private var continuation: CheckedContinuation<Data?, Never>?
+    private var resumed = false
+
+    func begin(request: URLRequest, continuation: CheckedContinuation<Data?, Never>) {
+        lock.lock()
+        if resumed {
+            lock.unlock()
+            continuation.resume(returning: nil)
+            return
+        }
+        self.continuation = continuation
+        lock.unlock()
+        let started = BoundedDataLoad.start(request: request, cap: 11_999_999, requireSuccess: true) { [weak self] data in
+            self?.finish(data)
+        }
+        lock.lock()
+        if resumed {
+            lock.unlock()
+            started.cancel()
+            return
+        }
+        load = started
+        lock.unlock()
+    }
+
+    func cancel() {
+        lock.lock()
+        let load = self.load
+        self.load = nil
+        lock.unlock()
+        load?.cancel()
+        finish(nil)
+    }
+
+    private func finish(_ data: Data?) {
+        lock.lock()
+        guard !resumed else {
+            lock.unlock()
+            return
+        }
+        resumed = true
+        let continuation = self.continuation
+        self.continuation = nil
+        lock.unlock()
+        continuation?.resume(returning: data)
     }
 }

@@ -497,7 +497,7 @@ final class BrowserTab: ObservableObject, Identifiable {
 
 /// Downloads a response body only up to `cap` bytes, then releases the session.
 /// Callers cancel it when the tab closes so a large file cannot stay buffered.
-private final class BoundedDataLoad: NSObject, URLSessionDataDelegate {
+final class BoundedDataLoad: NSObject, URLSessionDataDelegate {
     private let cap: Int
     private let requireSuccess: Bool
     private let completion: (Data?) -> Void
