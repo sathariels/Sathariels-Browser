@@ -11,6 +11,9 @@ final class SettingsStore: ObservableObject {
     @Published var homePage: String { didSet { save() } }
     @Published var grokModel: String { didSet { save() } }
     @Published var grokBotURL: String { didSet { save() } }
+    @Published var addressAIGhost: Bool { didSet { save() } }
+    @Published var pageFieldGhost: Bool { didSet { save(); SessionRegistry.shared.rebuildLiveWebViews() } }
+    @Published var agentInPrivate: Bool { didSet { save() } }
     @Published var passwordNeverHosts: [String] { didSet { save() } }
 
     private let defaults = UserDefaults.standard
@@ -41,6 +44,9 @@ final class SettingsStore: ObservableObject {
         grokModel = model.isEmpty ? "grok-4.7" : model
         let bot = defaults.string(forKey: "grokBotURL") ?? ""
         grokBotURL = bot.isEmpty ? "grokbot://" : bot
+        addressAIGhost = defaults.bool(forKey: "addressAIGhost")
+        pageFieldGhost = defaults.bool(forKey: "pageFieldGhost")
+        agentInPrivate = defaults.bool(forKey: "agentInPrivate")
         passwordNeverHosts = defaults.stringArray(forKey: "passwordNeverHosts") ?? []
         ready = true
     }
@@ -65,6 +71,9 @@ final class SettingsStore: ObservableObject {
         defaults.set(homePage, forKey: "homePage")
         defaults.set(grokModel, forKey: "grokModel")
         defaults.set(grokBotURL, forKey: "grokBotURL")
+        defaults.set(addressAIGhost, forKey: "addressAIGhost")
+        defaults.set(pageFieldGhost, forKey: "pageFieldGhost")
+        defaults.set(agentInPrivate, forKey: "agentInPrivate")
         defaults.set(passwordNeverHosts, forKey: "passwordNeverHosts")
     }
 }

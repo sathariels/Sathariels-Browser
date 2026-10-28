@@ -11,6 +11,10 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private var offeredGoogleFallback = false
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "lumenGhost" {
+            handleGhost(message)
+            return
+        }
         guard message.name == "lumenPassword", session?.isPrivate != true else { return }
         guard message.frameInfo.isMainFrame else { return }
         guard let body = message.body as? [String: Any] else { return }
@@ -31,6 +35,32 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             SettingsStore.shared.blockPasswordSaves(for: host)
         case .later:
             break
+        }
+    }
+
+    private func handleGhost(_ message: WKScriptMessage) {
+        guard SettingsStore.shared.pageFieldGhost, session?.isPrivate != true else { return }
+        guard let body = message.body as? [String: Any], let webView = message.webView else { return }
+        let requestID: Int
+        if let number = body["id"] as? Int {
+            requestID = number
+        } else if let number = body["id"] as? NSNumber {
+            requestID = number.intValue
+        } else {
+            return
+        }
+        let prefix = String((body["prefix"] as? String ?? "").prefix(180))
+        let label = String((body["label"] as? String ?? "").prefix(80))
+        guard prefix.count >= 2 else { return }
+        let token = GhostCompletion.bumpField()
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            let full = await GhostCompletion.field(prefix: prefix, label: label)
+            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            let suffix = full.flatMap { Omnibox.completionSuffix(typed: prefix, suggestion: $0) } ?? ""
+            let script = "window.__lumenGhost && window.__lumenGhost.show(\(requestID), \(JSEncode.string(suffix)))"
+            webView.evaluateJavaScript(script, completionHandler: nil)
         }
     }
 
@@ -132,7 +162,8 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             return session.popups.open(
                 configuration: configuration,
                 features: windowFeatures,
-                capturePasswords: !session.isPrivate
+                capturePasswords: !session.isPrivate,
+                pageGhost: SettingsStore.shared.pageFieldGhost && !session.isPrivate
             )
         }
         return session.adoptExternalTab(configuration: configuration)

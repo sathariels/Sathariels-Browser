@@ -38,8 +38,14 @@
 		F1EDAABBFC9DB13550D80FD9 /* WebKitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C054EA993D8116F04838BDFD /* WebKitFactory.swift */; };
 		CA23C32C7DC8BEB4BBFFCF29 /* AIProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/AIProvider.swift"; sourceTree = "<group>"; };
 		F9FCEB01B8BFC5E1D3DD15DE /* AIProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA23C32C7DC8BEB4BBFFCF29 /* AIProvider.swift */; };
+		44A5B9E65E1D10D62EFE5C2B /* AgentSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/AgentSafety.swift"; sourceTree = "<group>"; };
+		3EC4E4F52B0DAC292E841ABE /* AgentSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44A5B9E65E1D10D62EFE5C2B /* AgentSafety.swift */; };
+		3854D8B1846AAB59E24316D7 /* GhostCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/GhostCompletion.swift"; sourceTree = "<group>"; };
+		4CCC375978404BB491B87D3F /* GhostCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3854D8B1846AAB59E24316D7 /* GhostCompletion.swift */; };
 		65EA974E47EFB67B00472DAD /* GrokBotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/GrokBotProvider.swift"; sourceTree = "<group>"; };
 		FB22EF600E9A816890998D91 /* GrokBotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65EA974E47EFB67B00472DAD /* GrokBotProvider.swift */; };
+		1C28F7EC82A41CE964BD00B5 /* PageAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/PageAgent.swift"; sourceTree = "<group>"; };
+		CA331F66A822CD1E5E881573 /* PageAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C28F7EC82A41CE964BD00B5 /* PageAgent.swift */; };
 		58C7E22573E86F7FE65523EC /* XAIGrokProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/AI/XAIGrokProvider.swift"; sourceTree = "<group>"; };
 		DCB1B906FFDC951545E827D4 /* XAIGrokProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58C7E22573E86F7FE65523EC /* XAIGrokProvider.swift */; };
 		46FD281838B2E8DBDAB34949 /* AddressBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/AddressBarView.swift"; sourceTree = "<group>"; };
@@ -105,7 +111,10 @@
 				3FC15C29954DDEA9364C2882,
 				C054EA993D8116F04838BDFD,
 				CA23C32C7DC8BEB4BBFFCF29,
+				44A5B9E65E1D10D62EFE5C2B,
+				3854D8B1846AAB59E24316D7,
 				65EA974E47EFB67B00472DAD,
+				1C28F7EC82A41CE964BD00B5,
 				58C7E22573E86F7FE65523EC,
 				46FD281838B2E8DBDAB34949,
 				603C240113B3E90796F4BB59,
@@ -181,7 +190,10 @@
 				832A4196D94FBDEAD249669D,
 				F1EDAABBFC9DB13550D80FD9,
 				F9FCEB01B8BFC5E1D3DD15DE,
+				3EC4E4F52B0DAC292E841ABE,
+				4CCC375978404BB491B87D3F,
 				FB22EF600E9A816890998D91,
+				CA331F66A822CD1E5E881573,
 				DCB1B906FFDC951545E827D4,
 				EE674C0011947EED35CF39CB,
 				AB621C61F914F23FEDD4AE8D,

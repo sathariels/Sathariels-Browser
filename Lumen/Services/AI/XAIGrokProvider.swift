@@ -78,4 +78,82 @@ final class XAIGrokProvider: AIProvider {
         if !key.isEmpty { text = text.replacingOccurrences(of: key, with: "…") }
         return String(text.prefix(300))
     }
+
+    func complete(messages: [AIMessage], model: String, apiKey: String, maxTokens: Int) async throws -> String {
+        let json = try await post(
+            body: [
+                "model": model.isEmpty ? "grok-4.7" : model,
+                "stream": false,
+                "max_tokens": maxTokens,
+                "messages": messages.map { ["role": $0.role.rawValue, "content": $0.content] }
+            ],
+            apiKey: apiKey,
+            conversationID: nil
+        )
+        guard let choices = json["choices"] as? [[String: Any]],
+              let message = choices.first?["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw AIProviderError(message: "Grok returned an empty completion.")
+        }
+        return content
+    }
+
+    func completeWithTools(messages: [[String: Any]], tools: [[String: Any]], model: String, apiKey: String, conversationID: String) async throws -> ToolTurn {
+        let json = try await post(
+            body: [
+                "model": model.isEmpty ? "grok-4.7" : model,
+                "stream": false,
+                "max_tokens": 900,
+                "messages": messages,
+                "tools": tools
+            ],
+            apiKey: apiKey,
+            conversationID: conversationID
+        )
+        guard let choices = json["choices"] as? [[String: Any]],
+              let message = choices.first?["message"] as? [String: Any] else {
+            throw AIProviderError(message: "Grok returned no message.")
+        }
+        let text = message["content"] as? String ?? ""
+        let calls = (message["tool_calls"] as? [[String: Any]] ?? []).compactMap { raw -> ToolCall? in
+            let function = raw["function"] as? [String: Any]
+            let name = function?["name"] as? String ?? ""
+            guard !name.isEmpty else { return nil }
+            let id = (raw["id"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "call-\(name)"
+            return ToolCall(id: id, name: name, arguments: function?["arguments"] as? String ?? "{}")
+        }
+        return ToolTurn(text: text, calls: calls)
+    }
+
+    private func post(body: [String: Any], apiKey: String, conversationID: String?) async throws -> [String: Any] {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = conversationID == nil ? 12 : 60
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let conversationID {
+            request.setValue(conversationID, forHTTPHeaderField: "x-grok-conv-id")
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AIProviderError(message: "No response from xAI.")
+        }
+        guard http.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw AIProviderError(message: Self.message(from: data, status: http.statusCode, key: apiKey))
+        }
+        return json
+    }
+}
+
+struct ToolCall {
+    var id: String
+    var name: String
+    var arguments: String
+}
+
+struct ToolTurn {
+    var text: String
+    var calls: [ToolCall]
 }

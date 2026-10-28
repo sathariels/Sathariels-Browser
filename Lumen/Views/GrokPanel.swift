@@ -9,12 +9,16 @@ struct GrokPanel: View {
             HStack {
                 SectionLabel(title: "Grok", color: LumenTheme.violet)
                 Spacer()
+                if chat.sending {
+                    Button("Stop") { chat.cancel() }
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
+                }
                 Button("Clear") { chat.clear() }
                     .buttonStyle(LumenButtonStyle(tint: LumenTheme.textDim))
                     .padding(.trailing, 8)
             }
             if session.isPrivate {
-                Text("Private window. This chat is kept in memory only.")
+                Text(SettingsStore.shared.agentInPrivate ? "Private window. Agent actions are allowed." : "Private window. The agent is off unless you enable it in Settings.")
                     .font(LumenTheme.micro)
                     .foregroundStyle(LumenTheme.coral)
                     .padding(.horizontal, 8)
@@ -69,10 +73,11 @@ struct GrokPanel: View {
                         .foregroundStyle(LumenTheme.textDim)
                 }
                 ForEach(chat.messages) { message in
+                    let step = message.role == .step
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(message.role == .user ? "YOU" : "GROK")
+                        Text(message.role == .user ? "YOU" : (step ? "STEP" : "GROK"))
                             .font(LumenTheme.micro)
-                            .foregroundStyle(message.role == .user ? LumenTheme.amber : LumenTheme.violet)
+                            .foregroundStyle(message.role == .user ? LumenTheme.amber : (step ? LumenTheme.teal : LumenTheme.violet))
                         Text(message.content.isEmpty ? "…" : message.content)
                             .font(LumenTheme.monoSmall)
                             .foregroundStyle(LumenTheme.text)
@@ -80,7 +85,7 @@ struct GrokPanel: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(6)
-                    .overlay(Rectangle().strokeBorder(message.role == .user ? LumenTheme.amber.opacity(0.7) : LumenTheme.violet.opacity(0.7), lineWidth: 1))
+                    .overlay(Rectangle().strokeBorder((message.role == .user ? LumenTheme.amber : (step ? LumenTheme.teal : LumenTheme.violet)).opacity(0.7), lineWidth: 1))
                 }
                 if let error = chat.errorText {
                     Text(error)
@@ -94,12 +99,44 @@ struct GrokPanel: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Toggle(isOn: $chat.includePage) {
-                Text("Page")
-                    .font(LumenTheme.micro)
-                    .foregroundStyle(LumenTheme.teal)
+            HStack(spacing: 10) {
+                Toggle(isOn: $chat.includePage) {
+                    Text("Page")
+                        .font(LumenTheme.micro)
+                        .foregroundStyle(LumenTheme.teal)
+                }
+                .toggleStyle(.checkbox)
+                Toggle(isOn: $chat.act) {
+                    Text("Act")
+                        .font(LumenTheme.micro)
+                        .foregroundStyle(LumenTheme.violet)
+                }
+                .toggleStyle(.checkbox)
+                .disabled(session.isPrivate && !SettingsStore.shared.agentInPrivate)
+                .onAppear {
+                    if session.isPrivate && !SettingsStore.shared.agentInPrivate {
+                        chat.act = false
+                    }
+                }
             }
-            .toggleStyle(.checkbox)
+            if let title = chat.pendingTitle {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(LumenTheme.monoSmall)
+                        .foregroundStyle(LumenTheme.coral)
+                    Text(chat.pendingDetail ?? "")
+                        .font(LumenTheme.micro)
+                        .foregroundStyle(LumenTheme.text)
+                    HStack {
+                        Button("Allow") { chat.resolvePending(true) }
+                            .buttonStyle(LumenButtonStyle(tint: LumenTheme.lime))
+                        Button("Deny") { chat.resolvePending(false) }
+                            .buttonStyle(LumenButtonStyle(tint: LumenTheme.coral))
+                    }
+                }
+                .padding(6)
+                .overlay(Rectangle().strokeBorder(LumenTheme.coral, lineWidth: 1))
+            }
             TextField("Ask Grok", text: $chat.draft, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(LumenTheme.monoSmall)
@@ -128,11 +165,11 @@ struct GrokPanel: View {
 
     private func send() {
         guard let tab = session.focusedTab else {
-            chat.send(pageTitle: "", pageURL: "", selection: "", pageText: "")
+            chat.send(pageTitle: "", pageURL: "", selection: "", pageText: "", session: session)
             return
         }
         if !chat.includePage {
-            chat.send(pageTitle: tab.title, pageURL: tab.url?.absoluteString ?? "", selection: "", pageText: "")
+            chat.send(pageTitle: tab.title, pageURL: tab.url?.absoluteString ?? "", selection: "", pageText: "", session: session)
             return
         }
         tab.pageSnapshot { title, selection, text in
@@ -140,7 +177,8 @@ struct GrokPanel: View {
                 pageTitle: title,
                 pageURL: tab.url?.absoluteString ?? "",
                 selection: selection,
-                pageText: text
+                pageText: text,
+                session: session
             )
         }
     }

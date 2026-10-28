@@ -17,7 +17,9 @@ struct AddressBarView: View {
     @ObservedObject private var bookmarks = BookmarkStore.shared
     @ObservedObject private var settings = SettingsStore.shared
     @State private var prefix = ""
-    @State private var completionHost = ""
+    @State private var ghostSuffix = ""
+    @State private var dismissedPrefix: String?
+    @State private var aiQuery = ""
     @State private var menuOpen = false
     @State private var highlight = -1
     @State private var editing = false
@@ -82,7 +84,9 @@ struct AddressBarView: View {
         .onChange(of: session.addressSeed) { _, seed in
             if let seed {
                 prefix = seed
-                completionHost = ""
+                ghostSuffix = ""
+                dismissedPrefix = nil
+                aiQuery = ""
                 menuOpen = true
                 session.addressSeed = nil
             }
@@ -91,14 +95,25 @@ struct AddressBarView: View {
             if !editing { syncFromTab() }
         }
         .onAppear { syncFromTab() }
+        .task(id: aiQuery) {
+            let typed = aiQuery
+            guard typed.count >= 2, SettingsStore.shared.addressAIGhost, !session.isPrivate, APIKeyStore.isSet else { return }
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else { return }
+            let hints = Array(session.omniboxEntries().prefix(8).map(\.host))
+            let full = await GhostCompletion.address(prefix: typed, hints: hints)
+            guard !Task.isCancelled, prefix == typed, dismissedPrefix != typed else { return }
+            if let full, let suffix = Omnibox.completionSuffix(typed: typed, suggestion: full), !suffix.isEmpty {
+                ghostSuffix = suffix
+            }
+        }
     }
 
     private var omnibox: some View {
         OmniboxField(
             prefix: $prefix,
-            completionHost: completionHost,
+            ghostSuffix: ghostSuffix,
             focusToken: session.addressFocusToken,
-            tint: session.isPrivate ? LumenTheme.coral : LumenTheme.amber,
             onPrefix: { typed in
                 prefix = typed
                 editing = true
@@ -119,7 +134,14 @@ struct AddressBarView: View {
             onEscape: {
                 menuOpen = false
                 editing = false
+                ghostSuffix = ""
+                aiQuery = ""
                 syncFromTab()
+            },
+            onDismissGhost: {
+                dismissedPrefix = prefix
+                ghostSuffix = ""
+                aiQuery = ""
             }
         )
         .frame(height: 26)
@@ -169,7 +191,19 @@ struct AddressBarView: View {
     }
 
     private func refreshCompletion() {
-        completionHost = Omnibox.inlineHost(prefix: prefix, entries: session.omniboxEntries()) ?? ""
+        let typed = prefix
+        if dismissedPrefix == typed {
+            ghostSuffix = ""
+            return
+        }
+        dismissedPrefix = nil
+        let host = Omnibox.inlineHost(prefix: typed, entries: session.omniboxEntries()) ?? ""
+        ghostSuffix = Omnibox.completionSuffix(typed: typed, suggestion: host) ?? ""
+        if SettingsStore.shared.addressAIGhost, !session.isPrivate, APIKeyStore.isSet, typed.count >= 2 {
+            aiQuery = typed
+        } else {
+            aiQuery = ""
+        }
     }
 
     private func commit(_ text: String) {
@@ -208,7 +242,8 @@ struct AddressBarView: View {
 
     private func syncFromTab() {
         prefix = tab.url?.absoluteString ?? ""
-        completionHost = ""
+        ghostSuffix = ""
+        aiQuery = ""
         menuOpen = false
     }
 
@@ -235,74 +270,57 @@ struct AddressBarView: View {
 
 struct OmniboxField: NSViewRepresentable {
     @Binding var prefix: String
-    var completionHost: String
+    var ghostSuffix: String
     var focusToken: Int
-    var tint: Color
     var onPrefix: (String) -> Void
     var onSubmit: (String) -> Void
     var onMove: (Int) -> Void
     var onEscape: () -> Void
+    var onDismissGhost: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> NSTextField {
-        let field = NSTextField(string: "")
-        field.isBordered = false
-        field.drawsBackground = true
-        field.backgroundColor = NSColor(srgbRed: 0.067, green: 0.071, blue: 0.082, alpha: 1)
-        field.textColor = NSColor(srgbRed: 0.89, green: 0.90, blue: 0.85, alpha: 1)
-        field.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        field.focusRingType = .none
-        field.delegate = context.coordinator
-        field.lineBreakMode = .byTruncatingHead
-        field.cell?.sendsActionOnEndEditing = false
-        context.coordinator.field = field
-        return field
+    func makeNSView(context: Context) -> GhostFieldView {
+        let view = GhostFieldView()
+        view.field.delegate = context.coordinator
+        context.coordinator.view = view
+        return view
     }
 
-    func updateNSView(_ field: NSTextField, context: Context) {
+    func updateNSView(_ view: GhostFieldView, context: Context) {
         context.coordinator.parent = self
-        if field.currentEditor() == nil, field.stringValue != prefix {
-            field.stringValue = prefix
+        if view.field.currentEditor() == nil, view.field.stringValue != prefix {
+            view.field.stringValue = prefix
         }
+        view.suffix = ghostSuffix
         if context.coordinator.lastFocus != focusToken {
             context.coordinator.lastFocus = focusToken
             DispatchQueue.main.async {
-                field.window?.makeFirstResponder(field)
-                field.currentEditor()?.selectAll(nil)
+                view.window?.makeFirstResponder(view.field)
+                view.field.currentEditor()?.selectAll(nil)
             }
         }
-        context.coordinator.applyCompletionIfNeeded()
     }
 
     final class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: OmniboxField
-        weak var field: NSTextField?
+        weak var view: GhostFieldView?
         var applying = false
-        var suppressPrefix: String?
         var lastFocus = 0
 
         init(_ parent: OmniboxField) { self.parent = parent }
 
         func controlTextDidChange(_ notification: Notification) {
-            guard !applying, let field else { return }
-            let editor = field.currentEditor() as? NSTextView
-            let selected = editor?.selectedRange() ?? NSRange(location: 0, length: 0)
-            let full = field.stringValue
-            let typed: String
-            if selected.length > 0, selected.location + selected.length == (full as NSString).length {
-                typed = (full as NSString).substring(with: NSRange(location: 0, length: selected.location))
-            } else {
-                typed = full
-            }
-            if suppressPrefix == typed { return }
-            suppressPrefix = nil
-            parent.onPrefix(typed)
+            guard !applying, let field = view?.field else { return }
+            view?.renderGhost()
+            parent.onPrefix(field.stringValue)
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            let atEnd = caretAtEnd(textView, string: control.stringValue)
+            let ghost = parent.ghostSuffix
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                parent.onSubmit(control.stringValue)
+                parent.onSubmit(control.stringValue + (atEnd ? ghost : ""))
                 return true
             }
             if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
@@ -317,53 +335,91 @@ struct OmniboxField: NSViewRepresentable {
                 parent.onMove(-1)
                 return true
             }
-            let completionSelected = isCompletionSelected(textView)
-            if completionSelected && (commandSelector == #selector(NSResponder.insertTab(_:)) || commandSelector == #selector(NSResponder.moveRight(_:))) {
-                let end = (control.stringValue as NSString).length
-                textView.setSelectedRange(NSRange(location: end, length: 0))
-                suppressPrefix = nil
-                parent.onPrefix(control.stringValue)
+            if atEnd && !ghost.isEmpty && (commandSelector == #selector(NSResponder.insertTab(_:)) || commandSelector == #selector(NSResponder.moveRight(_:))) {
+                acceptGhost(control, textView: textView)
                 return true
             }
-            if completionSelected && commandSelector == #selector(NSResponder.deleteBackward(_:)) {
-                let typed = currentTyped(textView, string: control.stringValue)
-                suppressPrefix = typed
-                applying = true
-                control.stringValue = typed
-                textView.setSelectedRange(NSRange(location: (typed as NSString).length, length: 0))
-                applying = false
-                parent.onPrefix(typed)
+            if atEnd && !ghost.isEmpty && commandSelector == #selector(NSResponder.deleteBackward(_:)) {
+                parent.onDismissGhost()
                 return true
             }
             return false
         }
 
-        func applyCompletionIfNeeded() {
-            guard let field, field.currentEditor() != nil, let textView = field.currentEditor() as? NSTextView else { return }
-            let typed = parent.prefix
-            if suppressPrefix == typed { return }
-            guard let suffix = Omnibox.completionSuffix(typed: typed, suggestion: parent.completionHost), !suffix.isEmpty else { return }
-            let next = typed + suffix
-            if field.stringValue == next, isCompletionSelected(textView) { return }
+        private func acceptGhost(_ control: NSControl, textView: NSTextView) {
+            let next = control.stringValue + parent.ghostSuffix
             applying = true
-            field.stringValue = next
-            textView.setSelectedRange(NSRange(location: (typed as NSString).length, length: (suffix as NSString).length))
+            control.stringValue = next
+            textView.setSelectedRange(NSRange(location: (next as NSString).length, length: 0))
             applying = false
+            view?.suffix = ""
+            view?.renderGhost()
+            parent.onPrefix(next)
         }
 
-        private func isCompletionSelected(_ textView: NSTextView) -> Bool {
+        private func caretAtEnd(_ textView: NSTextView, string: String) -> Bool {
             let selected = textView.selectedRange()
-            let full = textView.string
-            guard selected.length > 0, selected.location + selected.length == (full as NSString).length else { return false }
-            return true
+            return selected.length == 0 && selected.location == (string as NSString).length
         }
+    }
+}
 
-        private func currentTyped(_ textView: NSTextView, string: String) -> String {
-            let selected = textView.selectedRange()
-            if selected.length > 0, selected.location + selected.length == (string as NSString).length {
-                return (string as NSString).substring(with: NSRange(location: 0, length: selected.location))
-            }
-            return string
+final class GhostFieldView: NSView {
+    let field = NSTextField(string: "")
+    private let ghost = NSTextField(labelWithString: "")
+    var suffix = "" {
+        didSet { renderGhost() }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor(srgbRed: 0.067, green: 0.071, blue: 0.082, alpha: 1).cgColor
+        let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        field.isBordered = false
+        field.isBezeled = false
+        field.drawsBackground = false
+        field.focusRingType = .none
+        field.font = font
+        field.textColor = NSColor(srgbRed: 0.89, green: 0.90, blue: 0.85, alpha: 1)
+        field.lineBreakMode = .byTruncatingHead
+        field.cell?.sendsActionOnEndEditing = false
+        ghost.isBordered = false
+        ghost.isBezeled = false
+        ghost.drawsBackground = false
+        ghost.isEditable = false
+        ghost.isSelectable = false
+        ghost.font = font
+        ghost.lineBreakMode = .byClipping
+        addSubview(ghost)
+        addSubview(field)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override func layout() {
+        super.layout()
+        wantsLayer = true
+        layer?.backgroundColor = NSColor(srgbRed: 0.067, green: 0.071, blue: 0.082, alpha: 1).cgColor
+        field.frame = bounds
+        ghost.frame = bounds
+    }
+
+    func renderGhost() {
+        let font = field.font ?? NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        let typed = field.stringValue
+        guard !suffix.isEmpty else {
+            ghost.attributedStringValue = NSAttributedString(string: "")
+            return
         }
+        let text = NSMutableAttributedString(string: typed, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.clear
+        ])
+        text.append(NSAttributedString(string: suffix, attributes: [
+            .font: font,
+            .foregroundColor: NSColor(srgbRed: 0.55, green: 0.58, blue: 0.56, alpha: 0.9)
+        ]))
+        ghost.attributedStringValue = text
     }
 }

@@ -241,4 +241,189 @@ enum PageScripts {
       return body.slice(0, 1500);
     })()
     """
+
+    /// Opt-in ghost text for ordinary text fields. Password fields are ignored.
+    static let fieldGhost = """
+    (function () {
+      if (window.__lumenGhost) return;
+      var current = null;
+      var seq = 0;
+      var shown = 0;
+      var suffix = '';
+      var box = document.createElement('div');
+      box.setAttribute('data-lumen-ghost', '1');
+      box.style.cssText = 'position:fixed;z-index:2147483646;pointer-events:none;color:#8b9088;white-space:pre;overflow:hidden;max-width:220px;';
+      function hide() {
+        suffix = '';
+        box.textContent = '';
+        if (box.parentNode) box.parentNode.removeChild(box);
+      }
+      function allowed(el) {
+        if (!el) return false;
+        var tag = el.tagName;
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') return false;
+        var type = (el.getAttribute('type') || 'text').toLowerCase();
+        if (type === 'password' || type === 'hidden' || type === 'file' || type === 'checkbox' || type === 'radio' || type === 'submit' || type === 'button' || type === 'range' || type === 'color') return false;
+        var auto = (el.getAttribute('autocomplete') || '').toLowerCase();
+        if (auto.indexOf('password') !== -1) return false;
+        return true;
+      }
+      function place(el) {
+        if (!suffix) { hide(); return; }
+        var style = getComputedStyle(el);
+        var canvas = place.canvas || (place.canvas = document.createElement('canvas'));
+        var ctx = canvas.getContext('2d');
+        ctx.font = style.font;
+        var caret = el.selectionStart == null ? String(el.value || '').length : el.selectionStart;
+        var width = ctx.measureText(String(el.value || '').slice(0, caret)).width;
+        var rect = el.getBoundingClientRect();
+        var pad = parseFloat(style.paddingLeft) || 0;
+        box.style.font = style.font;
+        box.style.left = (rect.left + pad + width - (el.scrollLeft || 0) + 1) + 'px';
+        box.style.top = (rect.top + (parseFloat(style.paddingTop) || 0)) + 'px';
+        box.style.height = (parseFloat(style.lineHeight) || rect.height) + 'px';
+        box.textContent = suffix;
+        if (!box.parentNode) document.documentElement.appendChild(box);
+      }
+      function insert(el, extra) {
+        var start = el.selectionStart == null ? String(el.value || '').length : el.selectionStart;
+        var end = el.selectionEnd == null ? start : el.selectionEnd;
+        var proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+        var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+        var next = String(el.value || '').slice(0, start) + extra + String(el.value || '').slice(end);
+        if (desc && desc.set) desc.set.call(el, next); else el.value = next;
+        var pos = start + extra.length;
+        if (el.setSelectionRange) el.setSelectionRange(pos, pos);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      document.addEventListener('focusin', function (event) {
+        if (!allowed(event.target)) { current = null; hide(); return; }
+        current = event.target;
+      }, true);
+      document.addEventListener('focusout', function () { hide(); }, true);
+      document.addEventListener('input', function (event) {
+        var el = event.target;
+        if (!allowed(el) || !window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.lumenGhost) return;
+        current = el;
+        hide();
+        var id = ++seq;
+        var value = String(el.value || '').slice(0, 180);
+        if (value.length < 2) return;
+        var label = (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.getAttribute('name') || '').slice(0, 80);
+        setTimeout(function () {
+          if (id !== seq || document.activeElement !== el) return;
+          try {
+            window.webkit.messageHandlers.lumenGhost.postMessage({ id: id, prefix: value, label: label });
+          } catch (e) {}
+        }, 500);
+      }, true);
+      document.addEventListener('keydown', function (event) {
+        if (!suffix || !current || document.activeElement !== current) return;
+        if (event.key === 'Escape') { hide(); return; }
+        if (event.key !== 'Tab') return;
+        event.preventDefault();
+        var extra = suffix;
+        hide();
+        insert(current, extra);
+      }, true);
+      window.__lumenGhost = {
+        show: function (id, text) {
+          if (id !== seq || !current || document.activeElement !== current) return;
+          suffix = text || '';
+          if (!suffix) { hide(); return; }
+          shown = id;
+          place(current);
+        }
+      };
+    })();
+    """
+
+    /// Installed on demand, only while the agent is running. Not a document-start script.
+    static let agentInstall = """
+    window.__lumenAgent = {
+      nodes: [],
+      label: function (el) {
+        var text = '';
+        try { text = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.innerText || el.getAttribute('title') || ''; } catch (e) {}
+        return String(text).replace(/\\s+/g, ' ').trim().slice(0, 80);
+      },
+      secret: function (el) {
+        var type = (el.getAttribute('type') || '').toLowerCase();
+        var auto = (el.getAttribute('autocomplete') || '').toLowerCase();
+        return type === 'password' || auto.indexOf('password') !== -1;
+      },
+      read: function () {
+        this.nodes = [];
+        var list = [];
+        var found = document.querySelectorAll('a, button, input, textarea, select, [role="button"], [role="link"]');
+        for (var n = 0; n < found.length && list.length < 24; n++) {
+          var el = found[n];
+          var rect = el.getBoundingClientRect();
+          if (rect.width < 2 || rect.height < 2) continue;
+          var type = (el.getAttribute('type') || '').toLowerCase();
+          if (type === 'hidden' || type === 'file' || type === 'checkbox' || type === 'radio') continue;
+          var secret = this.secret(el);
+          var idx = this.nodes.length;
+          this.nodes.push(el);
+          var value = '';
+          if (!secret && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+            try { value = String(el.value || '').slice(0, 40); } catch (e) {}
+          }
+          list.push({
+            i: idx,
+            tag: el.tagName.toLowerCase(),
+            type: type,
+            text: secret ? '' : this.label(el),
+            name: String(el.getAttribute('name') || '').slice(0, 40),
+            autocomplete: String(el.getAttribute('autocomplete') || '').slice(0, 40),
+            secret: !!secret,
+            value: value
+          });
+        }
+        var body = '';
+        try { body = document.body && document.body.innerText ? document.body.innerText.slice(0, 3500) : ''; } catch (e) {}
+        return { title: document.title || '', url: String(location.href || ''), text: body, elements: list };
+      },
+      describe: function (i) {
+        var el = this.nodes[i];
+        if (!el || (el.isConnected === false)) return null;
+        var type = (el.getAttribute('type') || '').toLowerCase();
+        var secret = this.secret(el);
+        return {
+          i: i,
+          tag: el.tagName.toLowerCase(),
+          type: type,
+          text: secret ? '' : this.label(el),
+          name: String(el.getAttribute('name') || '').slice(0, 40),
+          autocomplete: String(el.getAttribute('autocomplete') || '').slice(0, 40),
+          secret: !!secret
+        };
+      },
+      click: function (i) {
+        var el = this.nodes[i];
+        if (!el) return { ok: false, error: 'missing' };
+        try { el.scrollIntoView({ block: 'center' }); } catch (e) {}
+        try { el.focus(); } catch (e) {}
+        el.click();
+        return { ok: true };
+      },
+      type: function (i, text) {
+        var el = this.nodes[i];
+        if (!el) return { ok: false, error: 'missing' };
+        if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return { ok: false, error: 'not a field' };
+        el.focus();
+        var proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+        var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+        if (desc && desc.set) desc.set.call(el, text); else el.value = text;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        return { ok: true };
+      },
+      scroll: function (dir) {
+        if (dir === 'top') window.scrollTo(0, 0);
+        else window.scrollBy(0, dir === 'up' ? -480 : 480);
+        return { ok: true };
+      }
+    };
+    """
 }

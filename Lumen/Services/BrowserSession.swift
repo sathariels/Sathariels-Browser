@@ -322,7 +322,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     func adoptExternalTab(configuration: WKWebViewConfiguration) -> WKWebView {
         let tab = makeTab(url: nil, title: "New Tab")
         let view = WKWebView(frame: .zero, configuration: configuration)
-        tab.adopt(view, capturePasswords: !isPrivate)
+        tab.adopt(view, capturePasswords: !isPrivate, pageGhost: SettingsStore.shared.pageFieldGhost && !isPrivate)
         tabs.append(tab)
         show(tab, wake: false)
         persist()

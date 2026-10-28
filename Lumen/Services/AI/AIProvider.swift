@@ -16,6 +16,18 @@ protocol AIProvider: AnyObject {
         apiKey: String,
         conversationID: String
     ) -> AsyncThrowingStream<String, Error>
+    func complete(messages: [AIMessage], model: String, apiKey: String, maxTokens: Int) async throws -> String
+    func completeWithTools(messages: [[String: Any]], tools: [[String: Any]], model: String, apiKey: String, conversationID: String) async throws -> ToolTurn
+}
+
+extension AIProvider {
+    func complete(messages: [AIMessage], model: String, apiKey: String, maxTokens: Int) async throws -> String {
+        throw AIProviderError(message: "This provider does not complete text.")
+    }
+
+    func completeWithTools(messages: [[String: Any]], tools: [[String: Any]], model: String, apiKey: String, conversationID: String) async throws -> ToolTurn {
+        throw AIProviderError(message: "This provider cannot use tools.")
+    }
 }
 
 enum AIProviders {
@@ -31,13 +43,18 @@ final class ChatStore: ObservableObject {
     @Published var messages: [AIMessage] = []
     @Published var draft = ""
     @Published var includePage = true
+    @Published var act = true
     @Published var sending = false
     @Published var errorText: String?
+    @Published var pendingTitle: String?
+    @Published var pendingDetail: String?
     @Published var providerID = XAIGrokProvider.providerID
 
     let isPrivate: Bool
     let conversationID = UUID().uuidString
+    private(set) var runID = UUID()
     private var task: Task<Void, Never>?
+    private var pendingResume: ((Bool) -> Void)?
 
     init(isPrivate: Bool) {
         self.isPrivate = isPrivate
@@ -45,7 +62,34 @@ final class ChatStore: ObservableObject {
 
     var provider: AIProvider { AIProviders.find(providerID) }
 
-    func send(pageTitle: String, pageURL: String, selection: String, pageText: String) {
+    func requestConfirm(title: String, detail: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                if !self.sending {
+                    continuation.resume(returning: false)
+                    return
+                }
+                if let pending = self.pendingResume {
+                    self.pendingResume = nil
+                    pending(false)
+                }
+                self.pendingTitle = title
+                self.pendingDetail = detail
+                self.pendingResume = { allow in
+                    continuation.resume(returning: allow)
+                }
+            }
+        }
+    }
+
+    func resolvePending(_ allow: Bool) {
+        pendingResume?(allow)
+        pendingResume = nil
+        pendingTitle = nil
+        pendingDetail = nil
+    }
+
+    func send(pageTitle: String, pageURL: String, selection: String, pageText: String, session: BrowserSession?) {
         let question = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, !sending else { return }
         if provider.isStub {
@@ -57,8 +101,9 @@ final class ChatStore: ObservableObject {
             return
         }
         errorText = nil
+        let agentAllowed = act && session != nil && !provider.isStub && (!isPrivate || SettingsStore.shared.agentInPrivate)
         var outbound = question
-        if includePage && (!pageURL.isEmpty || !pageText.isEmpty || !selection.isEmpty) {
+        if !agentAllowed && includePage && (!pageURL.isEmpty || !pageText.isEmpty || !selection.isEmpty) {
             outbound = """
             [Page]
             Title: \(pageTitle)
@@ -86,6 +131,18 @@ final class ChatStore: ObservableObject {
         let model = SettingsStore.shared.grokModel
         let conversation = conversationID
         task?.cancel()
+        runID = UUID()
+        let currentRun = runID
+        if agentAllowed, let session {
+            task = Task { [weak self, weak session] in
+                guard let self, let session else {
+                    await MainActor.run { self?.sending = false }
+                    return
+                }
+                await PageAgent.run(chat: self, session: session, assistantID: assistantID, runID: currentRun)
+            }
+            return
+        }
         task = Task { [weak self] in
             let stream = self?.provider.streamReply(
                 messages: [AIMessage(id: UUID(), role: .system, content: Self.systemPrompt)] + payload,
@@ -119,15 +176,20 @@ final class ChatStore: ObservableObject {
     }
 
     func cancel() {
+        runID = UUID()
         task?.cancel()
+        resolvePending(false)
         sending = false
     }
 
     func clear() {
+        runID = UUID()
         task?.cancel()
+        resolvePending(false)
         messages = []
         sending = false
         errorText = nil
+        pendingTitle = nil
     }
 
     func trimSoft() {

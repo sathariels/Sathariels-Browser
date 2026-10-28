@@ -135,7 +135,7 @@ struct ClipItem: Codable, Identifiable, Equatable {
 }
 
 struct AIMessage: Codable, Equatable, Identifiable {
-    enum Role: String, Codable { case system, user, assistant }
+    enum Role: String, Codable { case system, user, assistant, step }
     var id: UUID
     var role: Role
     var content: String

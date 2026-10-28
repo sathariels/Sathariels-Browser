@@ -77,17 +77,18 @@ final class BrowserTab: ObservableObject, Identifiable {
             site: site,
             ruleList: ContentBlocker.shared.ruleList,
             blockingEnabled: SettingsStore.shared.contentBlocking,
-            capturePasswords: !session.isPrivate
+            capturePasswords: !session.isPrivate,
+            pageGhost: SettingsStore.shared.pageFieldGhost && !session.isPrivate
         )
         let view = WKWebView(frame: .zero, configuration: configuration)
-        install(view, capturePasswords: !session.isPrivate)
+        install(view, capturePasswords: !session.isPrivate, pageGhost: SettingsStore.shared.pageFieldGhost && !session.isPrivate)
         if let url {
             view.load(URLRequest(url: url))
         }
     }
 
-    func adopt(_ view: WKWebView, capturePasswords: Bool) {
-        install(view, capturePasswords: capturePasswords)
+    func adopt(_ view: WKWebView, capturePasswords: Bool, pageGhost: Bool) {
+        install(view, capturePasswords: capturePasswords, pageGhost: pageGhost)
     }
 
     func goBack() { webView?.goBack() }
@@ -232,8 +233,8 @@ final class BrowserTab: ObservableObject, Identifiable {
         }
     }
 
-    private func install(_ view: WKWebView, capturePasswords: Bool) {
-        WebKitFactory.attach(webView: view, handler: delegate, capturePasswords: capturePasswords)
+    private func install(_ view: WKWebView, capturePasswords: Bool, pageGhost: Bool) {
+        WebKitFactory.attach(webView: view, handler: delegate, capturePasswords: capturePasswords, pageGhost: pageGhost)
         view.navigationDelegate = delegate
         view.uiDelegate = delegate
         webView = view

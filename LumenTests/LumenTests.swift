@@ -42,6 +42,16 @@ final class LumenTests: XCTestCase {
         XCTAssertGreaterThan(recent, old)
     }
 
+    func testAgentConfirmsRiskyClicksOnly() {
+        XCTAssertTrue(AgentSafety.clickNeedsConfirm(type: "submit", text: "Pay now"))
+        XCTAssertTrue(AgentSafety.clickNeedsConfirm(type: "button", text: "Send message"))
+        XCTAssertFalse(AgentSafety.clickNeedsConfirm(type: "submit", text: "Search"))
+        XCTAssertFalse(AgentSafety.clickNeedsConfirm(type: "button", text: "Next page"))
+        XCTAssertTrue(AgentSafety.typeNeedsConfirm(type: "password", name: "", autocomplete: ""))
+        XCTAssertTrue(AgentSafety.isPasswordField(type: "text", autocomplete: "current-password"))
+        XCTAssertFalse(AgentSafety.typeNeedsConfirm(type: "text", name: "q", autocomplete: "off"))
+    }
+
     func testGoogleRejectionDetection() {
         let blocked = URL(string: "https://accounts.google.com/v3/signin/rejected")!
         XCTAssertTrue(GoogleSignInDetector.isRejection(url: blocked))

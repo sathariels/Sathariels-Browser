@@ -29,7 +29,8 @@ enum WebKitFactory {
         site: SitePermissions?,
         ruleList: WKContentRuleList?,
         blockingEnabled: Bool,
-        capturePasswords: Bool
+        capturePasswords: Bool,
+        pageGhost: Bool = false
     ) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         configuration.processPool = processPool
@@ -63,6 +64,13 @@ enum WebKitFactory {
                 forMainFrameOnly: true
             ))
         }
+        if pageGhost {
+            controller.addUserScript(WKUserScript(
+                source: PageScripts.fieldGhost,
+                injectionTime: .atDocumentEnd,
+                forMainFrameOnly: true
+            ))
+        }
         configuration.userContentController = controller
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         return configuration
@@ -71,7 +79,8 @@ enum WebKitFactory {
     static func attach(
         webView: WKWebView,
         handler: WKScriptMessageHandler,
-        capturePasswords: Bool
+        capturePasswords: Bool,
+        pageGhost: Bool = false
     ) {
         webView.customUserAgent = SafariUserAgent.current
         webView.allowsBackForwardNavigationGestures = true
@@ -86,24 +95,39 @@ enum WebKitFactory {
         }
         // Register the bridge only when we need it. An empty WKWebView bridge is one of
         // the signals Google uses to refuse sign-in, so private windows skip it.
-        guard capturePasswords else { return }
-        let proxy = WeakScriptProxy(target: handler)
-        webView.configuration.userContentController.add(proxy, name: "lumenPassword")
-        objc_setAssociatedObject(webView, &proxyKey, proxy, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        var names: [String] = []
+        if capturePasswords || pageGhost {
+            let proxy = WeakScriptProxy(target: handler)
+            if capturePasswords {
+                webView.configuration.userContentController.add(proxy, name: "lumenPassword")
+                names.append("lumenPassword")
+            }
+            if pageGhost {
+                webView.configuration.userContentController.add(proxy, name: "lumenGhost")
+                names.append("lumenGhost")
+            }
+            objc_setAssociatedObject(webView, &proxyKey, proxy, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(webView, &handlerNamesKey, names as NSArray, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
     }
 
     static func detach(_ webView: WKWebView) {
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "lumenPassword")
+        let names = objc_getAssociatedObject(webView, &handlerNamesKey) as? [String] ?? []
+        for name in names {
+            webView.configuration.userContentController.removeScriptMessageHandler(forName: name)
+        }
         webView.configuration.userContentController.removeAllUserScripts()
         webView.removeFromSuperview()
         objc_setAssociatedObject(webView, &proxyKey, nil, .OBJC_ASSOCIATION_ASSIGN)
+        objc_setAssociatedObject(webView, &handlerNamesKey, nil, .OBJC_ASSOCIATION_ASSIGN)
     }
 }
 
 private var proxyKey: UInt8 = 0
+private var handlerNamesKey: UInt8 = 0
 
 final class WeakScriptProxy: NSObject, WKScriptMessageHandler {
     weak var target: WKScriptMessageHandler?

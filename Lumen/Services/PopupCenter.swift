@@ -18,7 +18,7 @@ final class PopupCenter: NSObject, NSWindowDelegate {
     weak var session: BrowserSession?
     private var boxes: [UUID: Box] = [:]
 
-    func open(configuration: WKWebViewConfiguration, features: WKWindowFeatures, capturePasswords: Bool) -> WKWebView {
+    func open(configuration: WKWebViewConfiguration, features: WKWindowFeatures, capturePasswords: Bool, pageGhost: Bool = false) -> WKWebView {
         let width = features.width?.doubleValue ?? 480
         let height = features.height?.doubleValue ?? 720
         let window = NSWindow(
@@ -35,7 +35,7 @@ final class PopupCenter: NSObject, NSWindowDelegate {
         delegate.session = session
         let webView = WKWebView(frame: window.contentView?.bounds ?? .zero, configuration: configuration)
         webView.autoresizingMask = [.width, .height]
-        WebKitFactory.attach(webView: webView, handler: delegate, capturePasswords: capturePasswords)
+        WebKitFactory.attach(webView: webView, handler: delegate, capturePasswords: capturePasswords, pageGhost: pageGhost)
         webView.navigationDelegate = delegate
         webView.uiDelegate = delegate
         window.contentView = webView

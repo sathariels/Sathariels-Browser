@@ -112,14 +112,18 @@ The status bar shows the measured WebKit total when `proc_pidinfo` can see the c
 
 ## Omnibox
 
-The address bar completes the host of the best frecency match. Typing `asu` can complete to `asurascans.com`, with `rascans.com` selected.
+The address bar shows the best frecency match as grey ghost text after the caret, in the style of a code editor. The suggestion is not part of the field until you accept it. Typing `asu` can ghost `rascans.com` so the line reads `asurascans.com`.
 
-- **Tab** or **Right arrow** accepts the completion.
-- **Delete** removes the selected tail and does not immediately put it back.
+- **Tab** or **Right arrow** accepts the ghost text.
+- **Delete** dismisses the ghost and leaves what you typed.
+- **Enter** goes to the text you see, including the ghost.
 - **Enter** opens the field text, or the highlighted row.
 - The menu lists history, bookmarks, and open tabs (capped), plus a search row for the current engine.
 - Ranking is visit count times a recency weight (1 day, 7 days, 30 days, older). The lookup is a scan of a flat array capped at 1,500 history rows. It does not keep page bodies.
 - Private windows do not record visits and do not suggest history. Bookmarks and that window's open tabs still appear.
+- **AI ghost text** is off until you turn it on in Settings and save an xAI key. After you pause typing (about half a second), Grok may replace the history ghost with its own continuation. The request sends the prefix and up to eight host names, not page contents. Private windows never send it. If the key is missing or the reply does not continue the prefix, the history ghost stays.
+
+Page fields have a separate opt-in. When it is on, ordinary text inputs and text areas show the same kind of grey suggestion after a short pause, and Tab inserts it. Password fields, hidden fields, and private windows are skipped. The script posts only the field label and the text you already typed. It is not installed until the setting is on, so idle tabs do not carry it.
 
 Default search is DuckDuckGo. Google and Bing are in Settings.
 
@@ -210,7 +214,11 @@ The sidebar keeps recent clipboard items while a normal window is key. A timer w
 The provider protocol is `AIProvider`.
 
 - **Grok (xAI)** is the working provider. It streams `POST https://api.x.ai/v1/chat/completions` (OpenAI-compatible SSE). The default model is `grok-4.7`. Change it in Settings. The API key is typed into Settings and stored in the Keychain (`app.lumen.browser` / `xai-api-key`). It is not in the repo, UserDefaults, or logs. The field starts empty even when a key is already saved.
-- **Page** attaches the focused page's title, URL, selection, and a truncated `innerText` to that one request. The transcript stores your question, not a second copy of the page.
+- **Act** (on by default outside private windows) runs a tool loop on that same endpoint: `read_page`, `click`, `type_text`, `scroll`, `navigate`, and `new_tab`. Summaries are the model writing after `read_page`, not a separate tool. Each step is a line in the transcript. **Stop** cancels the loop and any confirmation that is waiting.
+- Before a click that submits, pays, sends, or signs in, and before typing into a password, card, or one-time-code field, the panel asks **Allow** or **Deny**. Password values are never read. Search buttons are not treated as purchases.
+- The agent script is injected only when a tool runs, not at launch. Page text sent back to the model is capped, and the tool transcript is trimmed with the rest of the chat.
+- Private windows leave **Act** off unless **Settings → Grok → Allow the agent in private windows** is on.
+- **Page** (with Act off) attaches the focused page's title, URL, selection, and a truncated `innerText` to that one request. The transcript stores your question, not a second copy of the page. With Act on, the model reads the page through the tool instead.
 - **Grok Bot** is a separate desktop assistant. It does not have a public HTTP API that this project can call. `GrokBotProvider` is a stub with a TODO. Selecting it in the panel explains that and does not send a request. The sidebar **Grok Bot** button opens a configurable URL, default `grokbot://`. **Send page to bot** copies the title, URL, and selection (or a short text excerpt) to the clipboard, then opens that URL. Whether Grok Bot reads the clipboard is up to Grok Bot. Lumen does not invent a protocol for it.
 
 ## Content blocker
