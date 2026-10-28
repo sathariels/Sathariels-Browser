@@ -1,7 +1,7 @@
 import XCTest
-@testable import Lumen
+@testable import SatharielsBrowser
 
-final class LumenTests: XCTestCase {
+final class SatharielsBrowserTests: XCTestCase {
     func testSearchVersusHost() {
         let search = AddressResolver.resolve("lumen browser", engine: .duckDuckGo)
         XCTAssertEqual(search?.host, "duckduckgo.com")

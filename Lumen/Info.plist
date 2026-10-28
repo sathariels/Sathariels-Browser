@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Lumen</string>
+	<string>Sathariels Browser</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconName</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Lumen</string>
+	<string>Sathariels Browser</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,7 +27,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Lumen is a placeholder name.</string>
+	<string>© 2026 Sathariels Browser</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
@@ -56,10 +56,10 @@
 		</dict>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>Lumen OAuth callback</string>
+			<string>Sathariels Browser OAuth callback</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>lumen</string>
+				<string>sathariels</string>
 			</array>
 		</dict>
 	</array>

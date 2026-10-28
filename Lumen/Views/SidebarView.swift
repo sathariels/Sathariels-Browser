@@ -27,7 +27,7 @@ struct SidebarView: View {
             Rectangle()
                 .fill(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)
                 .frame(width: 10, height: 10)
-            Text(session.isPrivate ? "PRIVATE" : "LUMEN")
+            Text(session.isPrivate ? "PRIVATE" : "SATHARIELS")
                 .font(LumenTheme.micro)
                 .tracking(1.6)
                 .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)

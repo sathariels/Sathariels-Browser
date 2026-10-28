@@ -272,7 +272,7 @@ struct KeyWindowProbe: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSView, context: Context) {
         (nsView as? ProbeView)?.session = session
-        nsView.window?.title = session.isPrivate ? "Private — Lumen" : (session.focusedTab?.title ?? "Lumen")
+        nsView.window?.title = session.isPrivate ? "Private — Sathariels Browser" : (session.focusedTab?.title ?? "Sathariels Browser")
         nsView.window?.backgroundColor = LumenTheme.windowBackground
         nsView.window?.appearance = NSAppearance(named: .darkAqua)
     }

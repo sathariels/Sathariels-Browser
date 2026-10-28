@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate Lumen.xcodeproj from the source tree. No third-party tools."""
+"""Regenerate SatharielsBrowser.xcodeproj from the source tree. No third-party tools."""
 
 import hashlib
 import json
@@ -164,7 +164,7 @@ def write_project() -> None:
     asset_ref = file_ref("Assets.xcassets", "folder.assetcatalog")
     rules_ref = file_ref("Resources/blocker-rules.json", "text.json")
     info_ref = file_ref("Info.plist", "text.plist.xml")
-    ent_ref = file_ref("Lumen.entitlements", "text.plist.entitlements")
+    ent_ref = file_ref("SatharielsBrowser.entitlements", "text.plist.entitlements")
     asset_build = add("build:assets", f"""\t\t{pid("build:assets")} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {asset_ref} /* Assets.xcassets */; }};""")
     rules_build = add("build:rules", f"""\t\t{pid("build:rules")} /* blocker-rules.json in Resources */ = {{isa = PBXBuildFile; fileRef = {rules_ref} /* blocker-rules.json */; }};""")
     app_resources.extend([asset_build, rules_build])
@@ -177,8 +177,8 @@ def write_project() -> None:
         test_refs.append(ref)
         test_builds.append(bid)
 
-    app_product = add("product:app", f"""\t\t{pid("product:app")} /* Lumen.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; }};""")
-    test_product = add("product:tests", f"""\t\t{pid("product:tests")} /* LumenTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LumenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};""")
+    app_product = add("product:app", f"""\t\t{pid("product:app")} /* Sathariels Browser.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sathariels Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; }};""")
+    test_product = add("product:tests", f"""\t\t{pid("product:tests")} /* SatharielsBrowserTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatharielsBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};""")
 
     def group(seed: str, name: str, children: list[str], path: str | None) -> str:
         body = ",\n".join(f"\t\t\t\t{child}" for child in children)
@@ -196,7 +196,7 @@ def write_project() -> None:
     app_group = group("group:app", "Lumen", app_children, "Lumen")
     test_group = group("group:tests", "LumenTests", test_refs, "LumenTests")
     products = group("group:products", "Products", [app_product, test_product], None)
-    main_group = group("group:main", "Lumen", [app_group, test_group, products], None)
+    main_group = group("group:main", "SatharielsBrowser", [app_group, test_group, products], None)
 
     def phase(seed: str, isa: str, files: list[str]) -> str:
         body = ",\n".join(f"\t\t\t\t{item}" for item in files) if files else ""
@@ -244,7 +244,7 @@ def write_project() -> None:
     app_common = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
-        "CODE_SIGN_ENTITLEMENTS": "Lumen/Lumen.entitlements",
+        "CODE_SIGN_ENTITLEMENTS": "Lumen/SatharielsBrowser.entitlements",
         "CODE_SIGN_IDENTITY": '"-"',
         "CODE_SIGN_STYLE": "Manual",
         "CODE_SIGNING_ALLOWED": "YES",
@@ -260,8 +260,9 @@ def write_project() -> None:
         "INFOPLIST_FILE": "Lumen/Info.plist",
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks"',
         "MARKETING_VERSION": "0.1.0",
-        "PRODUCT_BUNDLE_IDENTIFIER": "app.lumen.browser",
-        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser",
+        "PRODUCT_MODULE_NAME": "SatharielsBrowser",
+        "PRODUCT_NAME": '"Sathariels Browser"',
         "SWIFT_EMIT_LOC_STRINGS": "YES",
         "MACOSX_DEPLOYMENT_TARGET": "14.0",
     }
@@ -275,11 +276,12 @@ def write_project() -> None:
         "ENABLE_HARDENED_RUNTIME": "NO",
         "GENERATE_INFOPLIST_FILE": "YES",
         "MACOSX_DEPLOYMENT_TARGET": "14.0",
-        "PRODUCT_BUNDLE_IDENTIFIER": "app.lumen.browser.tests",
-        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser.tests",
+        "PRODUCT_MODULE_NAME": "SatharielsBrowserTests",
+        "PRODUCT_NAME": "SatharielsBrowserTests",
         "SDKROOT": "macosx",
         "SWIFT_VERSION": "5.0",
-        "TEST_HOST": '"$(BUILT_PRODUCTS_DIR)/Lumen.app/Contents/MacOS/Lumen"',
+        "TEST_HOST": '"$(BUILT_PRODUCTS_DIR)/Sathariels Browser.app/Contents/MacOS/Sathariels Browser"',
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks"',
     }
     target_configs["test-Debug"] = xc("test-Debug", test_common)
@@ -305,15 +307,15 @@ def write_project() -> None:
 \t\t\tcontainerPortal = {pid("project")} /* Project object */;
 \t\t\tproxyType = 1;
 \t\t\tremoteGlobalIDString = {pid("target:app")};
-\t\t\tremoteInfo = Lumen;
+\t\t\tremoteInfo = SatharielsBrowser;
 \t\t}};""")
     test_dep = add("dep:test-app", f"""\t\t{pid("dep:test-app")} /* PBXTargetDependency */ = {{
 \t\t\tisa = PBXTargetDependency;
-\t\t\ttarget = {pid("target:app")} /* Lumen */;
+\t\t\ttarget = {pid("target:app")} /* SatharielsBrowser */;
 \t\t\ttargetProxy = {proxy} /* PBXContainerItemProxy */;
 \t\t}};""")
 
-    app_target = add("target:app", f"""\t\t{pid("target:app")} /* Lumen */ = {{
+    app_target = add("target:app", f"""\t\t{pid("target:app")} /* SatharielsBrowser */ = {{
 \t\t\tisa = PBXNativeTarget;
 \t\t\tbuildConfigurationList = {app_list} /* list:app */;
 \t\t\tbuildPhases = (
@@ -325,13 +327,13 @@ def write_project() -> None:
 \t\t\t);
 \t\t\tdependencies = (
 \t\t\t);
-\t\t\tname = Lumen;
-\t\t\tproductName = Lumen;
-\t\t\tproductReference = {app_product} /* Lumen.app */;
+\t\t\tname = SatharielsBrowser;
+\t\t\tproductName = SatharielsBrowser;
+\t\t\tproductReference = {app_product} /* Sathariels Browser.app */;
 \t\t\tproductType = "com.apple.product-type.application";
 \t\t}};""")
 
-    test_target = add("target:tests", f"""\t\t{pid("target:tests")} /* LumenTests */ = {{
+    test_target = add("target:tests", f"""\t\t{pid("target:tests")} /* SatharielsBrowserTests */ = {{
 \t\t\tisa = PBXNativeTarget;
 \t\t\tbuildConfigurationList = {test_list} /* list:test */;
 \t\t\tbuildPhases = (
@@ -343,9 +345,9 @@ def write_project() -> None:
 \t\t\tdependencies = (
 \t\t\t\t{test_dep} /* PBXTargetDependency */,
 \t\t\t);
-\t\t\tname = LumenTests;
-\t\t\tproductName = LumenTests;
-\t\t\tproductReference = {test_product} /* LumenTests.xctest */;
+\t\t\tname = SatharielsBrowserTests;
+\t\t\tproductName = SatharielsBrowserTests;
+\t\t\tproductReference = {test_product} /* SatharielsBrowserTests.xctest */;
 \t\t\tproductType = "com.apple.product-type.bundle.unit-test";
 \t\t}};""")
 
@@ -367,13 +369,13 @@ def write_project() -> None:
 \t\t\t\ten,
 \t\t\t\tBase,
 \t\t\t);
-\t\t\tmainGroup = {main_group} /* Lumen */;
+\t\t\tmainGroup = {main_group} /* SatharielsBrowser */;
 \t\t\tproductRefGroup = {products} /* Products */;
 \t\t\tprojectDirPath = "";
 \t\t\tprojectRoot = "";
 \t\t\ttargets = (
-\t\t\t\t{app_target} /* Lumen */,
-\t\t\t\t{test_target} /* LumenTests */,
+\t\t\t\t{app_target} /* SatharielsBrowser */,
+\t\t\t\t{test_target} /* SatharielsBrowserTests */,
 \t\t\t);
 \t\t}};""")
 
@@ -396,12 +398,12 @@ def write_project() -> None:
 \trootObject = {project} /* Project object */;
 }}
 """
-    proj_dir = ROOT / "Lumen.xcodeproj"
+    proj_dir = ROOT / "SatharielsBrowser.xcodeproj"
     proj_dir.mkdir(exist_ok=True)
     (proj_dir / "project.pbxproj").write_text(out)
     scheme_dir = proj_dir / "xcshareddata" / "xcschemes"
     scheme_dir.mkdir(parents=True, exist_ok=True)
-    (scheme_dir / "Lumen.xcscheme").write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+    (scheme_dir / "SatharielsBrowser.xcscheme").write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1600"
    version = "1.7">
@@ -418,9 +420,9 @@ def write_project() -> None:
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "{app_target}"
-               BuildableName = "Lumen.app"
-               BlueprintName = "Lumen"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "Sathariels Browser.app"
+               BlueprintName = "SatharielsBrowser"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -432,9 +434,9 @@ def write_project() -> None:
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "{test_target}"
-               BuildableName = "LumenTests.xctest"
-               BlueprintName = "LumenTests"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "SatharielsBrowserTests.xctest"
+               BlueprintName = "SatharielsBrowserTests"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -451,9 +453,9 @@ def write_project() -> None:
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "{test_target}"
-               BuildableName = "LumenTests.xctest"
-               BlueprintName = "LumenTests"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "SatharielsBrowserTests.xctest"
+               BlueprintName = "SatharielsBrowserTests"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -473,9 +475,9 @@ def write_project() -> None:
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "{app_target}"
-            BuildableName = "Lumen.app"
-            BlueprintName = "Lumen"
-            ReferencedContainer = "container:Lumen.xcodeproj">
+            BuildableName = "Sathariels Browser.app"
+            BlueprintName = "SatharielsBrowser"
+            ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -490,9 +492,9 @@ def write_project() -> None:
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "{app_target}"
-            BuildableName = "Lumen.app"
-            BlueprintName = "Lumen"
-            ReferencedContainer = "container:Lumen.xcodeproj">
+            BuildableName = "Sathariels Browser.app"
+            BlueprintName = "SatharielsBrowser"
+            ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

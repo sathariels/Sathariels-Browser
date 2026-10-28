@@ -1,8 +1,8 @@
-# Lumen
+# Sathariels Browser
 
-Lumen is a small macOS browser: Swift, SwiftUI, and `WKWebView`. The name is a placeholder. It is meant to stay usable as a daily driver while keeping fewer web processes alive than Chrome.
+Sathariels Browser is a small macOS browser: Swift, SwiftUI, and `WKWebView`. It is meant to stay usable as a daily driver while keeping fewer web processes alive than Chrome.
 
-It builds to a normal `Lumen.app` (bundle id `app.lumen.browser`). Drag that app to `/Applications` and launch it from the Dock or Spotlight. You do not have to keep Xcode running.
+It builds to a normal `Sathariels Browser.app` (bundle id `com.sathariels.browser`). Drag that app to `/Applications` and launch it from the Dock or Spotlight. You do not have to keep Xcode running.
 
 ## Requirements
 
@@ -18,26 +18,26 @@ From the repo root, on a Mac:
 ./scripts/build-app.sh
 ```
 
-That runs `xcodebuild` in Release, ad-hoc signs the app with `Lumen/Lumen.entitlements`, and writes:
+That runs `xcodebuild` in Release, ad-hoc signs the app with `Lumen/SatharielsBrowser.entitlements`, and writes:
 
-- `dist/Lumen.app`
-- `dist/Lumen-macos.zip`
-- `dist/Lumen.dmg`
+- `dist/Sathariels Browser.app`
+- `dist/Sathariels Browser-macos.zip`
+- `dist/Sathariels Browser.dmg`
 
-Drag `Lumen.app` into `/Applications`.
+Drag `Sathariels Browser.app` into `/Applications`.
 
 The signature is ad-hoc (`codesign --sign -`). It is enough to run on the machine that built it. Gatekeeper does not treat it like a Developer ID app. The first time you open it outside Xcode:
 
-1. Right-click `Lumen.app` and choose **Open**.
+1. Right-click `Sathariels Browser.app` and choose **Open**.
 2. Confirm **Open** in the dialog.
 3. If macOS only offers Move to Trash, open **System Settings → Privacy & Security** and choose **Open Anyway**, then try again.
 
-You can also open `Lumen.xcodeproj` and press Run. The target is already set to ad-hoc signing with an empty team, so a personal development team is optional for local use. To distribute beyond this Mac, switch the target to your Developer ID team in Signing & Capabilities.
+You can also open `SatharielsBrowser.xcodeproj` and press Run. The target is already set to ad-hoc signing with an empty team, so a personal development team is optional for local use. To distribute beyond this Mac, switch the target to your Developer ID team in Signing & Capabilities.
 
 Unit tests (address bar, frecency, Google block detection, session coding):
 
 ```bash
-xcodebuild -project Lumen.xcodeproj -scheme Lumen -destination 'platform=macOS' test
+xcodebuild -project SatharielsBrowser.xcodeproj -scheme SatharielsBrowser -destination 'platform=macOS' test
 ```
 
 This tree was written on Linux, where `xcodebuild` is not available, so the compile has not been executed in this environment. Open it in Xcode on a Mac, or run the script above, before you trust a binary.
@@ -46,7 +46,7 @@ This tree was written on Linux, where `xcodebuild` is not available, so the comp
 
 ```
 ┌─────────────┬──────────────────────────────┬────────────┐
-│ LUMEN       │  ← → ↻   omnibox    ★  ⓘ    │ GROK       │
+│ SATHARIELS       │  ← → ↻   omnibox    ★  ⓘ    │ GROK       │
 │ Tabs Marks  │  find bar, when open         │            │
 │ tab rows    │                              │            │
 │             │  one pane, or two side by    │            │
@@ -60,7 +60,7 @@ The chrome is dark, square, and flat (0px corner radius, 1px borders). A short s
 
 ## Why it uses less RAM
 
-Chrome keeps a renderer process for each tab (and often for each extension) until you close the tab. Lumen's UI is one small SwiftUI process. Web content lives in WebKit, and only while a tab is actually awake.
+Chrome keeps a renderer process for each tab (and often for each extension) until you close the tab. Sathariels Browser's UI is one small SwiftUI process. Web content lives in WebKit, and only while a tab is actually awake.
 
 - A new tab is a native start page. It does not create a `WKWebView` until you navigate.
 - Restored tabs are created suspended. Only the focused pane is woken.
@@ -72,20 +72,20 @@ Chrome keeps a renderer process for each tab (and often for each extension) unti
 - The Grok panel, download list UI, settings sections, and clipboard thumbnails are created when you open them. Clipboard images are 48px JPEG thumbnails on disk, and only a few decoded images stay in an `NSCache`.
 - A memory-pressure source (`DispatchSourceMemoryPressure`) suspends every tab except the focused pane, drops thumbnail cache, and trims the chat transcript.
 
-A single heavy page (Figma, a large docs tab, YouTube) will still use a lot of memory. That cost is the page. Lumen wins when many tabs are open and most of them are idle, which is the usual shape of a browsing session.
+A single heavy page (Figma, a large docs tab, YouTube) will still use a lot of memory. That cost is the page. Sathariels Browser wins when many tabs are open and most of them are idle, which is the usual shape of a browsing session.
 
 The per-tab figure is honest about its source:
 
 - **asleep** means the web view is gone.
-- If exactly one web view is alive, Lumen attributes the resident size of child `WebContent` processes (`proc_pidinfo`) to that tab.
+- If exactly one web view is alive, Sathariels Browser attributes the resident size of child `WebContent` processes (`proc_pidinfo`) to that tab.
 - If several are alive, WebKit does not expose which process belongs to which tab. The label then shows a `~` estimate from resource transfer size and DOM node count. Private WebKit memory SPI is not used.
 
 ## Memory: compare with Chrome
 
-1. Quit Chrome and Lumen. In Activity Monitor, choose **View → All Processes, Hierarchically** and show **Real Memory**.
+1. Quit Chrome and Sathariels Browser. In Activity Monitor, choose **View → All Processes, Hierarchically** and show **Real Memory**.
 2. Open the same set of pages in Chrome, one window, several tabs. Wait until they finish loading. Sum **Google Chrome** plus every **Google Chrome Helper**.
-3. Open the same pages in Lumen. Sum **Lumen**, **com.apple.WebKit.WebContent**, **com.apple.WebKit.Networking**, and **com.apple.WebKit.GPU**.
-4. Leave Lumen in the background, or set **Settings → Memory** to 1 minute, and wait. The WebContent rows for asleep tabs should disappear. Chrome's helpers for those same tabs usually stay.
+3. Open the same pages in Sathariels Browser. Sum **Sathariels Browser**, **com.apple.WebKit.WebContent**, **com.apple.WebKit.Networking**, and **com.apple.WebKit.GPU**.
+4. Leave Sathariels Browser in the background, or set **Settings → Memory** to 1 minute, and wait. The WebContent rows for asleep tabs should disappear. Chrome's helpers for those same tabs usually stay.
 5. Optional: open the same two pages side by side with **Cmd-\\**, click one pane, and wait. The idle pane should flip to **Asleep** and its web process should go away. Click **Wake** and it comes back.
 
 The status bar shows the measured WebKit total when `proc_pidinfo` can see the child processes. Sandbox or OS changes can make that read fail; the UI then falls back to the estimate.
@@ -131,35 +131,35 @@ Default search is DuckDuckGo. Google and Bing are in Settings.
 
 Embedded `WKWebView`s often fail Google sign-in because the default user agent omits Safari's `Version/x Safari/605` token, and because OAuth depends on `window.open` plus cookies.
 
-Lumen does four things:
+Sathariels Browser does four things:
 
 1. **Safari user agent.** It reads `Safari.app`'s marketing version when the sandbox allows it, and otherwise uses `Version/26.1`. The string is the normal desktop Safari shape. The app name is not appended. `applicationNameForUserAgent` is left unset.
 2. **Real popups.** `WKUIDelegate.createWebViewWith` returns a new web view built with the configuration WebKit passes in, so `window.opener` stays wired. Sized windows open as auxiliary windows. Plain new tabs adopt that same configuration. `javaScriptCanOpenWindowsAutomatically` is on.
 3. **Persistent cookies.** Normal windows use `WKWebsiteDataStore.default()`, so Google cookies survive relaunch and are shared across tabs. The content rules exclude `accounts.google.com`, `myaccount.google.com`, and `accounts.youtube.com`.
-4. **Secure-session fallback.** If the accounts host hits a rejected URL, or the page text says the browser may not be secure, a banner offers **Secure session**. That calls `ASWebAuthenticationSession` (callback scheme `lumen`).
+4. **Secure-session fallback.** If the accounts host hits a rejected URL, or the page text says the browser may not be secure, a banner offers **Secure session**. That calls `ASWebAuthenticationSession` (callback scheme `sathariels`).
 
-The fallback is an escape hatch, not a cookie transplant. The system session uses Safari's cookie jar. There is no public API to copy those cookies into `WKWebView`. It completes only if the provider redirects to `lumen://`. Signing in to Gmail or YouTube inside Lumen depends on the user agent, the popup, and the shared data store.
+The fallback is an escape hatch, not a cookie transplant. The system session uses Safari's cookie jar. There is no public API to copy those cookies into `WKWebView`. It completes only if the provider redirects to `sathariels://`. Signing in to Gmail or YouTube inside Sathariels Browser depends on the user agent, the popup, and the shared data store.
 
 The password bridge (`window.webkit.messageHandlers`) is registered only on normal windows, because an empty WebKit JS bridge is one of the signals Google uses. Private windows do not install it.
 
 ### How to test Google sign-in
 
-1. Open a page that prints the user agent (or `https://httpbin.org/user-agent`). It should contain `Version/` and `Safari/` and should not contain `Lumen`.
+1. Open a page that prints the user agent (or `https://httpbin.org/user-agent`). It should contain `Version/` and `Safari/` and should not contain `Sathariels Browser`.
 2. Go to `https://accounts.google.com` and sign in. You should get Google's real form, not "This browser or app may not be secure".
 3. Quit, relaunch, open `https://mail.google.com`. The session should still be there.
-4. On a site with **Sign in with Google**, the click should open a Lumen popup, not a dead click. Finish the flow. The popup should close and the site should be signed in.
+4. On a site with **Sign in with Google**, the click should open a Sathariels Browser popup, not a dead click. Finish the flow. The popup should close and the site should be signed in.
 5. If the rejection page appears anyway, use **Secure session** and read the limitation above. Turning the content blocker off is the other thing to try.
 
 ## Passwords
 
 `WKWebView` does not offer Safari's iCloud Passwords fill for arbitrary sites. Associated domains are intentionally not used; that API only returns credentials for domains the app has claimed.
 
-What Lumen does instead:
+What Sathariels Browser does instead:
 
 - If this OS still responds to WebKit's private `_setPasswordAutoFillEnabled:`, it turns that on. A missing selector is ignored. This is best-effort and not a promise that iCloud Passwords will appear in page fields.
 - A page script watches main-frame login submits and asks **Save password for host?** The password is passed to `SecItemAdd` as an internet password (`kSecClassInternetPassword`) and then dropped. It is never written to JSON, UserDefaults, history, or the log.
-- Items are saved synchronizable when the Keychain accepts that, so they can join iCloud Keychain. If sync is refused, Lumen retries as a local item.
-- On a later visit, if one saved account matches a visible password field, Lumen fills it. Several accounts show a banner of usernames only. Settings lists host and username and can delete an item. The password is not shown.
+- Items are saved synchronizable when the Keychain accepts that, so they can join iCloud Keychain. If sync is refused, Sathariels Browser retries as a local item.
+- On a later visit, if one saved account matches a visible password field, Sathariels Browser fills it. Several accounts show a banner of usernames only. Settings lists host and username and can delete an item. The password is not shown.
 - Private windows do not install the save script and do not fill.
 
 ## Downloads
@@ -213,13 +213,13 @@ The sidebar keeps recent clipboard items while a normal window is key. A timer w
 
 The provider protocol is `AIProvider`.
 
-- **Grok (xAI)** is the working provider. It streams `POST https://api.x.ai/v1/chat/completions` (OpenAI-compatible SSE). The default model is `grok-4.7`. Change it in Settings. The API key is typed into Settings and stored in the Keychain (`app.lumen.browser` / `xai-api-key`). It is not in the repo, UserDefaults, or logs. The field starts empty even when a key is already saved.
+- **Grok (xAI)** is the working provider. It streams `POST https://api.x.ai/v1/chat/completions` (OpenAI-compatible SSE). The default model is `grok-4.7`. Change it in Settings. The API key is typed into Settings and stored in the Keychain (`com.sathariels.browser` / `xai-api-key`). It is not in the repo, UserDefaults, or logs. The field starts empty even when a key is already saved.
 - **Act** (on by default outside private windows) runs a tool loop on that same endpoint: `read_page`, `click`, `type_text`, `scroll`, `navigate`, and `new_tab`. Summaries are the model writing after `read_page`, not a separate tool. Each step is a line in the transcript. **Stop** cancels the loop and any confirmation that is waiting.
 - Before a click that submits, pays, sends, or signs in, and before typing into a password, card, or one-time-code field, the panel asks **Allow** or **Deny**. Password values are never read. Search buttons are not treated as purchases.
 - The agent script is injected only when a tool runs, not at launch. Page text sent back to the model is capped, and the tool transcript is trimmed with the rest of the chat.
 - Private windows leave **Act** off unless **Settings → Grok → Allow the agent in private windows** is on.
 - **Page** (with Act off) attaches the focused page's title, URL, selection, and a truncated `innerText` to that one request. The transcript stores your question, not a second copy of the page. With Act on, the model reads the page through the tool instead.
-- **Grok Bot** is a separate desktop assistant. It does not have a public HTTP API that this project can call. `GrokBotProvider` is a stub with a TODO. Selecting it in the panel explains that and does not send a request. The sidebar **Grok Bot** button opens a configurable URL, default `grokbot://`. **Send page to bot** copies the title, URL, and selection (or a short text excerpt) to the clipboard, then opens that URL. Whether Grok Bot reads the clipboard is up to Grok Bot. Lumen does not invent a protocol for it.
+- **Grok Bot** is a separate desktop assistant. It does not have a public HTTP API that this project can call. `GrokBotProvider` is a stub with a TODO. Selecting it in the panel explains that and does not send a request. The sidebar **Grok Bot** button opens a configurable URL, default `grokbot://`. **Send page to bot** copies the title, URL, and selection (or a short text excerpt) to the clipboard, then opens that URL. Whether Grok Bot reads the clipboard is up to Grok Bot. Sathariels Browser does not invent a protocol for it.
 
 ## Content blocker
 
@@ -233,7 +233,7 @@ Regular windows save tab order, URLs, titles, color tags, the active pane, the s
 
 **Inspect Element** is on for every web view (`isInspectable` on macOS 13.3+, and `developerExtrasEnabled`). Right-click a page and choose Inspect Element. **Cmd-Opt-I** asks WebKit to show the inspector when that private hook exists.
 
-**JSON.** A main-frame response whose type contains `json`, or whose URL ends in `.json`, is not handed to the web view. Lumen fetches it (with the tab’s cookies) and shows a collapsible tree: amber keys, teal strings, sky numbers, violet booleans. Raw toggles back to the text. Path and Value copy that node. Documents over about 1.2 MB are refused instead of being parsed. A `text/plain` body that starts with `{` or `[` is sniffed after load and shown the same way. The tree view is created only for that response.
+**JSON.** A main-frame response whose type contains `json`, or whose URL ends in `.json`, is not handed to the web view. Sathariels Browser fetches it (with the tab’s cookies) and shows a collapsible tree: amber keys, teal strings, sky numbers, violet booleans. Raw toggles back to the text. Path and Value copy that node. Documents over about 1.2 MB are refused instead of being parsed. A `text/plain` body that starts with `{` or `[` is sniffed after load and shown the same way. The tree view is created only for that response.
 
 **Local.** The tab list has a Local section. It does not scan until you press Scan. The usual dev ports (3000, 5173, 8080, and a few neighbors) are probed a few at a time. Click a row to open it. **Reload** watches only the focused `localhost` or `127.0.0.1` tab, and only if you turn it on. A restart (the port was down, then answers) or a changed `ETag` / `Last-Modified` reloads that tab.
 
@@ -292,7 +292,7 @@ These are not implemented, on purpose:
 ## Project map
 
 ```
-Lumen.xcodeproj
+SatharielsBrowser.xcodeproj
 Lumen/                 app sources, Info.plist, entitlements, assets, blocker rules
 LumenTests/            XCTest for the pure pieces
 scripts/build-app.sh   Release .app, zip, and DMG

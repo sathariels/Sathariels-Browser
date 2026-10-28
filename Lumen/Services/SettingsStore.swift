@@ -92,7 +92,7 @@ final class SettingsStore: ObservableObject {
 }
 
 enum APIKeyStore {
-    private static let service = "app.lumen.browser"
+    private static let service = "com.sathariels.browser"
     private static let account = "xai-api-key"
 
     static var isSet: Bool { KeychainStore.get(service: service, account: account) != nil }

@@ -201,7 +201,7 @@ final class ChatStore: ObservableObject {
     }
 
     private static let systemPrompt = """
-    You are Grok inside Lumen, a small macOS browser. Be direct. \
+    You are Grok inside Sathariels Browser, a small macOS browser. Be direct. \
     When a page excerpt is included, use only that excerpt and do not pretend you fetched the live page. \
     The excerpt may be truncated.
     """

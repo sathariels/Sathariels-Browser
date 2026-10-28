@@ -1,7 +1,7 @@
 import Foundation
 
 /// Grok Bot is a separate desktop assistant. It does not publish an HTTP API
-/// that Lumen can call, so this type is a placeholder.
+/// that Sathariels Browser can call, so this type is a placeholder.
 ///
 /// TODO: When Grok Bot documents an official API, implement `streamReply` here
 /// and only then. Do not guess endpoints, authentication, or message schemas.

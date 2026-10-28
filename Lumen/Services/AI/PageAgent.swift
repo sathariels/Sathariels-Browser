@@ -233,7 +233,7 @@ enum PageAgent {
     }
 
     private static let systemPrompt = """
-    You are Grok inside Lumen, acting on the focused tab. Use tools when the user wants something done on the page. \
+    You are Grok inside Sathariels Browser, acting on the focused tab. Use tools when the user wants something done on the page. \
     Summarize by calling read_page and then writing the summary yourself. \
     Password values are never included. Do not try to read them. \
     Clicks that submit, pay, send, or sign in, and typing into credential or payment fields, wait for the user to allow them. \

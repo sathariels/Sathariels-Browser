@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "29C7B681C8D62CBAC94D51C0"
-               BuildableName = "Lumen.app"
-               BlueprintName = "Lumen"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "Sathariels Browser.app"
+               BlueprintName = "SatharielsBrowser"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,9 +29,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7EC8F98B7A265120217712DE"
-               BuildableName = "LumenTests.xctest"
-               BlueprintName = "LumenTests"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "SatharielsBrowserTests.xctest"
+               BlueprintName = "SatharielsBrowserTests"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -48,9 +48,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7EC8F98B7A265120217712DE"
-               BuildableName = "LumenTests.xctest"
-               BlueprintName = "LumenTests"
-               ReferencedContainer = "container:Lumen.xcodeproj">
+               BuildableName = "SatharielsBrowserTests.xctest"
+               BlueprintName = "SatharielsBrowserTests"
+               ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "29C7B681C8D62CBAC94D51C0"
-            BuildableName = "Lumen.app"
-            BlueprintName = "Lumen"
-            ReferencedContainer = "container:Lumen.xcodeproj">
+            BuildableName = "Sathariels Browser.app"
+            BlueprintName = "SatharielsBrowser"
+            ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -87,9 +87,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "29C7B681C8D62CBAC94D51C0"
-            BuildableName = "Lumen.app"
-            BlueprintName = "Lumen"
-            ReferencedContainer = "container:Lumen.xcodeproj">
+            BuildableName = "Sathariels Browser.app"
+            BlueprintName = "SatharielsBrowser"
+            ReferencedContainer = "container:SatharielsBrowser.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

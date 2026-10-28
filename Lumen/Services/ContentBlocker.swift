@@ -62,7 +62,7 @@ final class ContentBlocker: ObservableObject {
         let source = try String(contentsOf: url, encoding: .utf8)
         let digest = SHA256.hash(data: Data(source.utf8))
         let suffix = digest.prefix(4).map { String(format: "%02x", $0) }.joined()
-        let identifier = "lumen.blocker.\(suffix)"
+        let identifier = "sathariels.blocker.\(suffix)"
         guard let store = WKContentRuleListStore.default() else {
             throw CocoaError(.coderInvalidValue)
         }

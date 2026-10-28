@@ -1,6 +1,6 @@
 import Foundation
 
-/// Atomic JSON files under Application Support/Lumen. No secrets belong here.
+/// Atomic JSON files under Application Support/Sathariels Browser. No secrets belong here.
 enum JSONStore {
     static func directory() throws -> URL {
         let base = try FileManager.default.url(
@@ -9,7 +9,7 @@ enum JSONStore {
             appropriateFor: nil,
             create: true
         )
-        let dir = base.appendingPathComponent("Lumen", isDirectory: true)
+        let dir = base.appendingPathComponent("Sathariels Browser", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

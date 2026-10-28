@@ -13,7 +13,7 @@ struct StartPageView: View {
                     Rectangle()
                         .fill(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)
                         .frame(width: 14, height: 14)
-                    Text(session.isPrivate ? "PRIVATE TAB" : "LUMEN")
+                    Text(session.isPrivate ? "PRIVATE TAB" : "SATHARIELS")
                         .font(LumenTheme.micro)
                         .tracking(2)
                         .foregroundStyle(session.isPrivate ? LumenTheme.coral : LumenTheme.amber)

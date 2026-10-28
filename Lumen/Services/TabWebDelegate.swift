@@ -160,7 +160,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             case .ask:
                 let allow = SitePrompt.ask(
                     title: "Pop-up from \(host)",
-                    message: "Allow this site to open windows? Lumen remembers the choice."
+                    message: "Allow this site to open windows? Sathariels Browser remembers the choice."
                 )
                 session.permissions.set(host: host, kind: .popups, choice: allow ? .allow : .deny)
                 if !allow { return nil }
@@ -254,7 +254,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         case .ask:
             let allow = SitePrompt.ask(
                 title: "\(host) wants the \(kind.label.lowercased())",
-                message: "Lumen will remember this for \(host)."
+                message: "Sathariels Browser will remember this for \(host)."
             )
             session.permissions.set(host: host, kind: kind, choice: allow ? .allow : .deny)
             return allow ? .grant : .deny
@@ -305,7 +305,7 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         if tab == nil {
             let alert = NSAlert()
             alert.messageText = "Google blocked this sign-in"
-            alert.informativeText = "Lumen can open a system sign-in window. That window uses Safari's session and does not copy cookies back into Lumen."
+            alert.informativeText = "Sathariels Browser can open a system sign-in window. That window uses Safari's session and does not copy cookies back into this browser."
             alert.addButton(withTitle: "Secure session")
             alert.addButton(withTitle: "Cancel")
             if alert.runModal() == .alertFirstButtonReturn {
@@ -356,7 +356,7 @@ final class GoogleSignInCoordinator: NSObject, ASWebAuthenticationPresentationCo
     private var session: ASWebAuthenticationSession?
 
     func start(url: URL) {
-        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "lumen") { callback, _ in
+        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "sathariels") { callback, _ in
             if let callback, let session = SessionRegistry.shared.keySession {
                 session.navigateFocused(to: callback)
             }

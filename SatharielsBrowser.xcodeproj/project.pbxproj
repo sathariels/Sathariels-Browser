@@ -8,8 +8,8 @@
 
 		5CB68573C113835037551C8E /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Model/Models.swift"; sourceTree = "<group>"; };
 		9EC501D0B6E24FE12FA19DCF /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB68573C113835037551C8E /* Models.swift */; };
-		D3789193FF5ECAFFA9A00066 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/LumenApp.swift"; sourceTree = "<group>"; };
-		B5E4D68B7169EB298CA18537 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3789193FF5ECAFFA9A00066 /* LumenApp.swift */; };
+		41013781A40D5494A4ABB6CC /* SatharielsBrowserApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/SatharielsBrowserApp.swift"; sourceTree = "<group>"; };
+		1DC98C1FF54DF4A054230F10 /* SatharielsBrowserApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41013781A40D5494A4ABB6CC /* SatharielsBrowserApp.swift */; };
 		6FB4409E54E2D0959D151E0F /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/BookmarkStore.swift"; sourceTree = "<group>"; };
 		4A9B02756990659948C47500 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB4409E54E2D0959D151E0F /* BookmarkStore.swift */; };
 		600150121621DF8FFA17040B /* BrowserSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/BrowserSession.swift"; sourceTree = "<group>"; };
@@ -93,18 +93,18 @@
 		5B04B2273026590A440D27C9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		4ECD08EEF314FEA38F31405F /* blocker-rules.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/blocker-rules.json"; sourceTree = "<group>"; };
 		1507F021100E808DBE2FAA00 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
-		A81433459746D67026B9E15C /* Lumen.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Lumen.entitlements"; sourceTree = "<group>"; };
+		1D40A5108B86EE279250E03B /* SatharielsBrowser.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SatharielsBrowser.entitlements"; sourceTree = "<group>"; };
 		FB90684E69A6C96ED866993E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B04B2273026590A440D27C9 /* Assets.xcassets */; };
 		5116A664840030A94246D401 /* blocker-rules.json in Resources */ = {isa = PBXBuildFile; fileRef = 4ECD08EEF314FEA38F31405F /* blocker-rules.json */; };
-		767A4F08E8E6DDC292EEE090 /* LumenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LumenTests.swift"; sourceTree = "<group>"; };
-		7DB97C6BF43EC5B3F7A4B522 /* LumenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767A4F08E8E6DDC292EEE090 /* LumenTests.swift */; };
-		B6CDB6E5D160E013280D3C68 /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E02A90D9643568EA39115CFB /* LumenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LumenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SatharielsBrowserTests.swift"; sourceTree = "<group>"; };
+		8D8BA73A7BE3B6FF3B4FEF03 /* SatharielsBrowserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */; };
+		B6CDB6E5D160E013280D3C68 /* Sathariels Browser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sathariels Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E02A90D9643568EA39115CFB /* SatharielsBrowserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SatharielsBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF8D0BD4B75E8C2C174692A5 /* Lumen */ = {
 			isa = PBXGroup;
 			children = (
 				5CB68573C113835037551C8E,
-				D3789193FF5ECAFFA9A00066,
+				41013781A40D5494A4ABB6CC,
 				6FB4409E54E2D0959D151E0F,
 				600150121621DF8FFA17040B,
 				BFA11CFCD92ED5E3F52C0298,
@@ -148,7 +148,7 @@
 				5B04B2273026590A440D27C9,
 				4ECD08EEF314FEA38F31405F,
 				1507F021100E808DBE2FAA00,
-				A81433459746D67026B9E15C
+				1D40A5108B86EE279250E03B
 			);
 			path = Lumen;
 			name = Lumen;
@@ -157,7 +157,7 @@
 		EEFE21A1443933CA4DE017DA /* LumenTests */ = {
 			isa = PBXGroup;
 			children = (
-				767A4F08E8E6DDC292EEE090
+				472B057791C3C31C51CFCFD2
 			);
 			path = LumenTests;
 			name = LumenTests;
@@ -172,14 +172,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		ADCF10F76EBF2A74473E9DC4 /* Lumen */ = {
+		ADCF10F76EBF2A74473E9DC4 /* SatharielsBrowser */ = {
 			isa = PBXGroup;
 			children = (
 				CF8D0BD4B75E8C2C174692A5,
 				EEFE21A1443933CA4DE017DA,
 				00C45FD35CB0F9C5F764F070
 			);
-			name = Lumen;
+			name = SatharielsBrowser;
 			sourceTree = "<group>";
 		};
 		507A349611DBB42F9CF9069B /* PBXSourcesBuildPhase */ = {
@@ -187,7 +187,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9EC501D0B6E24FE12FA19DCF,
-				B5E4D68B7169EB298CA18537,
+				1DC98C1FF54DF4A054230F10,
 				4A9B02756990659948C47500,
 				A62834103168766CA2860C4B,
 				FB597AF185E7CC9616D7975C,
@@ -250,7 +250,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7DB97C6BF43EC5B3F7A4B522
+				8D8BA73A7BE3B6FF3B4FEF03
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,7 +306,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Lumen/Lumen.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Lumen/SatharielsBrowser.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_ALLOWED = YES;
@@ -322,8 +322,9 @@
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.lumen.browser;
-				PRODUCT_NAME = $(TARGET_NAME);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
+				PRODUCT_MODULE_NAME = SatharielsBrowser;
+				PRODUCT_NAME = "Sathariels Browser";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 			};
@@ -334,7 +335,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Lumen/Lumen.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Lumen/SatharielsBrowser.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_ALLOWED = YES;
@@ -350,8 +351,9 @@
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.lumen.browser;
-				PRODUCT_NAME = $(TARGET_NAME);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
+				PRODUCT_MODULE_NAME = SatharielsBrowser;
+				PRODUCT_NAME = "Sathariels Browser";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 			};
@@ -367,11 +369,12 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.lumen.browser.tests;
-				PRODUCT_NAME = $(TARGET_NAME);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser.tests;
+				PRODUCT_MODULE_NAME = SatharielsBrowserTests;
+				PRODUCT_NAME = SatharielsBrowserTests;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lumen.app/Contents/MacOS/Lumen";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sathariels Browser.app/Contents/MacOS/Sathariels Browser";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 			};
 			name = Debug;
@@ -386,11 +389,12 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.lumen.browser.tests;
-				PRODUCT_NAME = $(TARGET_NAME);
+				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser.tests;
+				PRODUCT_MODULE_NAME = SatharielsBrowserTests;
+				PRODUCT_NAME = SatharielsBrowserTests;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lumen.app/Contents/MacOS/Lumen";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sathariels Browser.app/Contents/MacOS/Sathariels Browser";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 			};
 			name = Release;
@@ -427,14 +431,14 @@
 			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 29C7B681C8D62CBAC94D51C0;
-			remoteInfo = Lumen;
+			remoteInfo = SatharielsBrowser;
 		};
 		A29CFA50A7F91780AB6DB2AA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 29C7B681C8D62CBAC94D51C0 /* Lumen */;
+			target = 29C7B681C8D62CBAC94D51C0 /* SatharielsBrowser */;
 			targetProxy = F9B1326DFC287D15EB97FEF5 /* PBXContainerItemProxy */;
 		};
-		29C7B681C8D62CBAC94D51C0 /* Lumen */ = {
+		29C7B681C8D62CBAC94D51C0 /* SatharielsBrowser */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8A4C137FDF67CE32F42E0D24 /* list:app */;
 			buildPhases = (
@@ -446,12 +450,12 @@
 			);
 			dependencies = (
 			);
-			name = Lumen;
-			productName = Lumen;
-			productReference = B6CDB6E5D160E013280D3C68 /* Lumen.app */;
+			name = SatharielsBrowser;
+			productName = SatharielsBrowser;
+			productReference = B6CDB6E5D160E013280D3C68 /* Sathariels Browser.app */;
 			productType = "com.apple.product-type.application";
 		};
-		7EC8F98B7A265120217712DE /* LumenTests */ = {
+		7EC8F98B7A265120217712DE /* SatharielsBrowserTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CA25E31FA3A46B2171497E0D /* list:test */;
 			buildPhases = (
@@ -463,9 +467,9 @@
 			dependencies = (
 				A29CFA50A7F91780AB6DB2AA /* PBXTargetDependency */,
 			);
-			name = LumenTests;
-			productName = LumenTests;
-			productReference = E02A90D9643568EA39115CFB /* LumenTests.xctest */;
+			name = SatharielsBrowserTests;
+			productName = SatharielsBrowserTests;
+			productReference = E02A90D9643568EA39115CFB /* SatharielsBrowserTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		98F54143AB4E86B28C3AFEE0 /* Project object */ = {
@@ -486,13 +490,13 @@
 				en,
 				Base,
 			);
-			mainGroup = ADCF10F76EBF2A74473E9DC4 /* Lumen */;
+			mainGroup = ADCF10F76EBF2A74473E9DC4 /* SatharielsBrowser */;
 			productRefGroup = 00C45FD35CB0F9C5F764F070 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				29C7B681C8D62CBAC94D51C0 /* Lumen */,
-				7EC8F98B7A265120217712DE /* LumenTests */,
+				29C7B681C8D62CBAC94D51C0 /* SatharielsBrowser */,
+				7EC8F98B7A265120217712DE /* SatharielsBrowserTests */,
 			);
 		};
 	};

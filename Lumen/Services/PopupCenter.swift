@@ -27,7 +27,7 @@ final class PopupCenter: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Lumen"
+        window.title = "Sathariels Browser"
         window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = LumenTheme.windowBackground
         window.isReleasedWhenClosed = false

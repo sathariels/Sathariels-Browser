@@ -71,7 +71,7 @@ struct SettingsView: View {
                 .font(LumenTheme.micro)
                 .foregroundStyle(LumenTheme.textDim)
                 .textSelection(.enabled)
-            Button("Use Lumen for http and https links") {
+            Button("Use Sathariels Browser for http and https links") {
                 try? NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: "http")
                 try? NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: "https")
             }
@@ -107,11 +107,11 @@ struct SettingsView: View {
     private var passwords: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "Passwords", color: LumenTheme.lime)
-            Text("WKWebView cannot read Safari's iCloud Passwords for arbitrary sites. Lumen saves logins you confirm into the Keychain as internet passwords. They are never written to JSON or logs. Synchronizable items can join iCloud Keychain when that is turned on.")
+            Text("WKWebView cannot read Safari's iCloud Passwords for arbitrary sites. Sathariels Browser saves logins you confirm into the Keychain as internet passwords. They are never written to JSON or logs. Synchronizable items can join iCloud Keychain when that is turned on.")
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.textDim)
             if accounts.isEmpty {
-                Text("No Lumen passwords saved.")
+                Text("No saved passwords yet.")
                     .font(LumenTheme.monoSmall)
                     .foregroundStyle(LumenTheme.text)
             }

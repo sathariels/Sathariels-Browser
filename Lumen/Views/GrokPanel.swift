@@ -49,7 +49,7 @@ struct GrokPanel: View {
 
     private var stubNote: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Grok Bot has no official API. Lumen will not invent one.")
+            Text("Grok Bot has no official API. Sathariels Browser will not invent one.")
                 .font(LumenTheme.monoSmall)
                 .foregroundStyle(LumenTheme.text)
             Text("Use the sidebar to open the app, or send the current page title, URL, and selection to the clipboard and launch the configured URL.")

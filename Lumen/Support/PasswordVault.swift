@@ -66,7 +66,7 @@ enum PasswordVault {
         SecItemDelete(query as CFDictionary)
     }
 
-    private static let labelPrefix = "Lumen"
+    private static let labelPrefix = "Sathariels Browser"
 
     private static func save(host: String, username: String, password: String, synchronizable: Bool) -> Bool {
         guard let data = password.data(using: .utf8) else { return false }

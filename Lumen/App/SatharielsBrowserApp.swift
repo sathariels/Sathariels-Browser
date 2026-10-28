@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @main
-struct LumenApp: App {
+struct SatharielsBrowserApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     init() {
@@ -16,7 +16,7 @@ struct LumenApp: App {
             WindowLaunch(index: 0, isPrivate: false)
         }
         .defaultSize(width: 1180, height: 780)
-        .commands { LumenCommands() }
+        .commands { SatharielsBrowserCommands() }
 
         Settings {
             SettingsView()
@@ -116,7 +116,7 @@ extension FocusedValues {
     }
 }
 
-struct LumenCommands: Commands {
+struct SatharielsBrowserCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @FocusedValue(\.browserActions) private var actions
 

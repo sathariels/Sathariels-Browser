@@ -10,7 +10,7 @@ final class ClipboardStore: ObservableObject {
     private var lastChange: Int
     private var captureEnabled: Bool
     private let cache = NSCache<NSString, NSImage>()
-    private let echoType = NSPasteboard.PasteboardType("app.lumen.browser.echo")
+    private let echoType = NSPasteboard.PasteboardType("com.sathariels.browser.echo")
     private let concealed = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
     private let transient = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
 
