@@ -16,5 +16,10 @@
 	<true/>
 	<key>com.apple.security.personal-information.location</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.sathariels.browser-spks</string>
+		<string>com.sathariels.browser-spki</string>
+	</array>
 </dict>
 </plist>

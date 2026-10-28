@@ -208,9 +208,24 @@ def write_project() -> None:
 \t\t\trunOnlyForDeploymentPostprocessing = 0;
 \t\t}};""")
 
+    sparkle_package = add("pkg:sparkle", f"""\t\t{pid("pkg:sparkle")} /* XCRemoteSwiftPackageReference "Sparkle" */ = {{
+\t\t\tisa = XCRemoteSwiftPackageReference;
+\t\t\trepositoryURL = "https://github.com/sparkle-project/Sparkle";
+\t\t\trequirement = {{
+\t\t\t\tkind = exactVersion;
+\t\t\t\tversion = 2.10.1;
+\t\t\t}};
+\t\t}};""")
+    sparkle_product = add("dep:sparkle", f"""\t\t{pid("dep:sparkle")} /* Sparkle */ = {{
+\t\t\tisa = XCSwiftPackageProductDependency;
+\t\t\tpackage = {sparkle_package} /* XCRemoteSwiftPackageReference "Sparkle" */;
+\t\t\tproductName = Sparkle;
+\t\t}};""")
+    sparkle_build = add("build:sparkle", f"""\t\t{pid("build:sparkle")} /* Sparkle in Frameworks */ = {{isa = PBXBuildFile; productRef = {sparkle_product} /* Sparkle */; }};""")
+
     app_sources_phase = phase("phase:app-sources", "PBXSourcesBuildPhase", app_sources)
     app_resources_phase = phase("phase:app-resources", "PBXResourcesBuildPhase", app_resources)
-    app_frameworks_phase = phase("phase:app-frameworks", "PBXFrameworksBuildPhase", [])
+    app_frameworks_phase = phase("phase:app-frameworks", "PBXFrameworksBuildPhase", [sparkle_build])
     test_sources_phase = phase("phase:test-sources", "PBXSourcesBuildPhase", test_builds)
     test_frameworks_phase = phase("phase:test-frameworks", "PBXFrameworksBuildPhase", [])
 
@@ -250,7 +265,7 @@ def write_project() -> None:
         "CODE_SIGNING_ALLOWED": "YES",
         "CODE_SIGNING_REQUIRED": "YES",
         "COMBINE_HIDPI_IMAGES": "YES",
-        "CURRENT_PROJECT_VERSION": "1",
+        "CURRENT_PROJECT_VERSION": "0.4.0",
         "DEVELOPMENT_TEAM": '""',
         "ENABLE_APP_SANDBOX": "YES",
         "ENABLE_HARDENED_RUNTIME": "NO",
@@ -259,7 +274,8 @@ def write_project() -> None:
         "GENERATE_INFOPLIST_FILE": "NO",
         "INFOPLIST_FILE": "Lumen/Info.plist",
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks"',
-        "MARKETING_VERSION": "0.3.0",
+        "MARKETING_VERSION": "0.4.0",
+        "SU_PUBLIC_ED_KEY": '""',
         "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser",
         "PRODUCT_MODULE_NAME": "SatharielsBrowser",
         "PRODUCT_NAME": '"Sathariels Browser"',
@@ -327,6 +343,9 @@ def write_project() -> None:
 \t\t\t);
 \t\t\tdependencies = (
 \t\t\t);
+\t\t\tpackageProductDependencies = (
+\t\t\t\t{sparkle_product} /* Sparkle */,
+\t\t\t);
 \t\t\tname = SatharielsBrowser;
 \t\t\tproductName = SatharielsBrowser;
 \t\t\tproductReference = {app_product} /* Sathariels Browser.app */;
@@ -371,6 +390,9 @@ def write_project() -> None:
 \t\t\t);
 \t\t\tmainGroup = {main_group} /* SatharielsBrowser */;
 \t\t\tproductRefGroup = {products} /* Products */;
+\t\t\tpackageReferences = (
+\t\t\t\t{sparkle_package} /* XCRemoteSwiftPackageReference "Sparkle" */,
+\t\t\t);
 \t\t\tprojectDirPath = "";
 \t\t\tprojectRoot = "";
 \t\t\ttargets = (

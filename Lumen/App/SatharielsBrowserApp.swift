@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 @main
@@ -134,11 +135,14 @@ enum ScreenshotLaunch {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var updaterController: SPUStandardUpdaterController?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A SwiftUI window that is not key never installs a field editor, so the
         // address bar ignores typing until the app is a normal foreground app.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
+        startUpdaterIfSigned()
         ContentBlocker.shared.prepare()
         MemoryPressureCenter.shared.onPressure = { critical in
             SessionRegistry.shared.suspendForMemory(critical: critical)
@@ -151,6 +155,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { false }
+
+    func checkForUpdates() {
+        updaterController?.checkForUpdates(nil)
+    }
+
+    /// Sparkle stays unloaded until a release embeds SUPublicEDKey. Dev builds skip the
+    /// updater process so an empty key does not start background feed checks.
+    private func startUpdaterIfSigned() {
+        let key = (Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !key.isEmpty, !key.hasPrefix("$(") else { return }
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    }
 }
 
 struct BrowserActions {
@@ -190,6 +207,11 @@ struct SatharielsBrowserCommands: Commands {
     @FocusedValue(\.browserActions) private var actions
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") {
+                (NSApp.delegate as? AppDelegate)?.checkForUpdates()
+            }
+        }
         CommandGroup(replacing: .newItem) {
             Button("New Tab") { actions?.newTab() }
                 .keyboardShortcut("t", modifiers: .command)

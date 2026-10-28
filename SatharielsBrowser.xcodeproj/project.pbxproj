@@ -182,6 +182,20 @@
 			name = SatharielsBrowser;
 			sourceTree = "<group>";
 		};
+		97CA45A009DBF0B90B3C3203 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.1;
+			};
+		};
+		4D04ED6632C0CE0C862884D9 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 97CA45A009DBF0B90B3C3203 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		1AB28E7F84E6B6083BCE5210 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4D04ED6632C0CE0C862884D9 /* Sparkle */; };
 		507A349611DBB42F9CF9069B /* PBXSourcesBuildPhase */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -243,7 +257,9 @@
 		2D3446C63F9EEB9172CAE05B /* PBXFrameworksBuildPhase */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				1AB28E7F84E6B6083BCE5210
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		283236DFCBED01B817B33E02 /* PBXSourcesBuildPhase */ = {
@@ -312,7 +328,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 0.4.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -321,7 +337,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
+				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
 				PRODUCT_MODULE_NAME = SatharielsBrowser;
 				PRODUCT_NAME = "Sathariels Browser";
@@ -341,7 +358,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 0.4.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -350,7 +367,8 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
+				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
 				PRODUCT_MODULE_NAME = SatharielsBrowser;
 				PRODUCT_NAME = "Sathariels Browser";
@@ -450,6 +468,9 @@
 			);
 			dependencies = (
 			);
+			packageProductDependencies = (
+				4D04ED6632C0CE0C862884D9 /* Sparkle */,
+			);
 			name = SatharielsBrowser;
 			productName = SatharielsBrowser;
 			productReference = B6CDB6E5D160E013280D3C68 /* Sathariels Browser.app */;
@@ -492,6 +513,9 @@
 			);
 			mainGroup = ADCF10F76EBF2A74473E9DC4 /* SatharielsBrowser */;
 			productRefGroup = 00C45FD35CB0F9C5F764F070 /* Products */;
+			packageReferences = (
+				97CA45A009DBF0B90B3C3203 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
