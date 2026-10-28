@@ -36,11 +36,36 @@ cp "$CASK" "$TAP_DIR/Casks/sathariels-browser.rb"
 git -C "$TAP_DIR" init -q
 git -C "$TAP_DIR" add Casks
 git -C "$TAP_DIR" -c user.email="ci@example.com" -c user.name="ci" commit -q -m "tap"
-# Same artifact, higher cask version, so brew upgrade has something to install.
-sed 's/version "0.6.1"/version "0.6.2"/; s|download/v#{version}/|download/v0.6.1/|' \
-  "$CASK" > "$UPGRADE_DIR/Casks/sathariels-browser.rb"
-grep -q 'version "0.6.2"' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
-grep -q 'download/v0.6.1/' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
+
+# The installed app's short version must match the cask. The upgrade file
+# claims the next patch but still downloads this version's published zip.
+CURRENT="$(sed -n 's/^[[:space:]]*version "\([^"]*\)".*/\1/p' "$CASK" | head -1)"
+if [[ ! "$CURRENT" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+  echo "Could not read a numeric version from $CASK" >&2
+  exit 1
+fi
+NEXT="$(python3 - "$CURRENT" <<'PY'
+import sys
+parts = sys.argv[1].split(".")
+parts[-1] = str(int(parts[-1]) + 1)
+print(".".join(parts))
+PY
+)"
+python3 - "$CASK" "$UPGRADE_DIR/Casks/sathariels-browser.rb" "$CURRENT" "$NEXT" <<'PY'
+import pathlib, sys
+src, dst, current, nxt = sys.argv[1:]
+text = pathlib.Path(src).read_text()
+old = f'version "{current}"'
+if old not in text:
+    raise SystemExit(f"cask is missing {old}")
+text = text.replace(old, f'version "{nxt}"', 1)
+needle = "download/v#{version}/"
+if needle not in text:
+    raise SystemExit("cask url does not use download/v#{version}/")
+pathlib.Path(dst).write_text(text.replace(needle, f"download/v{current}/", 1))
+PY
+grep -q "version \"${NEXT}\"" "$UPGRADE_DIR/Casks/sathariels-browser.rb"
+grep -q "download/v${CURRENT}/" "$UPGRADE_DIR/Casks/sathariels-browser.rb"
 
 brew untap "$TAP_NAME" >/dev/null 2>&1 || true
 brew tap "$TAP_NAME" "$TAP_DIR"
@@ -49,7 +74,7 @@ test -d "$APP"
 IDENT="$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")"
 VERSION="$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist")"
 test "$IDENT" = "com.sathariels.browser"
-test "$VERSION" = "0.6.1"
+test "$VERSION" = "$CURRENT"
 xattr -p com.apple.quarantine "$APP" >/dev/null 2>&1 && echo "quarantine still set" >&2 && exit 1 || true
 
 open -n "$APP"
