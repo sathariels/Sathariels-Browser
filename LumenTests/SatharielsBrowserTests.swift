@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 import WebKit
 @testable import SatharielsBrowser
@@ -275,5 +276,82 @@ final class SatharielsBrowserTests: XCTestCase {
         let data = try? JSONEncoder().encode(file)
         let decoded = data.flatMap { try? JSONDecoder().decode(SessionFile.self, from: $0) }
         XCTAssertEqual(decoded, file)
+    }
+
+    @MainActor
+    func testAdoptedWindowReusesScriptHandlers() throws {
+        let session = BrowserSession(launch: WindowLaunch(index: -211, isPrivate: false))
+        defer { session.shutdown() }
+        session.navigateFocused(to: URL(string: "about:blank")!)
+        let opener = try XCTUnwrap(session.focusedTab?.webView)
+        let controller = opener.configuration.userContentController
+        let scripts = controller.userScripts.count
+        XCTAssertGreaterThan(scripts, 0)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        let popup = session.adoptExternalTab(configuration: opener.configuration)
+        XCTAssertTrue(popup.configuration.userContentController === controller)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        WebKitFactory.detach(popup)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+
+        _ = session.adoptExternalTab(configuration: opener.configuration)
+        XCTAssertEqual(controller.userScripts.count, scripts)
+    }
+
+    @MainActor
+    func testWindowOpenAndTargetBlankDoNotCrash() throws {
+        let session = BrowserSession(launch: WindowLaunch(index: -210, isPrivate: false))
+        defer { session.shutdown() }
+        session.permissions.set(host: "example.com", kind: .popups, choice: .allow)
+        session.navigateFocused(to: URL(string: "about:blank")!)
+        let opener = try XCTUnwrap(session.focusedTab?.webView)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = opener
+        window.makeKeyAndOrderFront(nil)
+        defer { window.close() }
+        let html = """
+        <!doctype html><body>
+        <a id="blank" href="https://example.com/blank" target="_blank">blank</a>
+        <script>
+        window.open("https://example.com/tab");
+        window.open("https://example.com/sized", "sized", "width=480,height=640");
+        document.getElementById("blank").click();
+        </script>
+        </body>
+        """
+        opener.loadHTMLString(html, baseURL: URL(string: "https://example.com/")!)
+        let deadline = Date().addingTimeInterval(15)
+        while Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+            if session.tabs.count >= 2 && session.popups.openCount >= 1 { break }
+        }
+        XCTAssertGreaterThanOrEqual(session.tabs.count, 2, "window.open() should add a tab")
+        XCTAssertGreaterThanOrEqual(session.popups.openCount, 1, "a sized window.open should open a popup")
+        let controller = opener.configuration.userContentController
+        let scripts = controller.userScripts.count
+        XCTAssertGreaterThan(scripts, 0)
+        if let extra = session.tabs.first(where: { $0.webView !== opener }) {
+            session.closeTab(extra.id)
+        }
+        session.popups.closeAll()
+        XCTAssertEqual(controller.userScripts.count, scripts)
+        XCTAssertTrue(WebKitFactory.installedHandlerNames(for: controller).contains("lumenPassword"))
+    }
+
+    func testAsuraHostsAreNotThreatListed() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
+        let hashes = ThreatList.decode(try Data(contentsOf: url))
+        for host in ["asurascans.com", "www.asurascans.com", "asuracomic.net", "www.asuracomic.net"] {
+            XCTAssertFalse(hashes.contains(ThreatList.hash64(host)), host)
+        }
     }
 }

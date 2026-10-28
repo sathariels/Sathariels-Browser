@@ -38,6 +38,22 @@ jobs:
           echo "::add-mask::${SPARKLE_PRIVATE_KEY}"
           bash ./scripts/sparkle-prepare.sh
 
+      - name: Test popup windows
+        run: |
+          xcodebuild test \
+            -project SatharielsBrowser.xcodeproj \
+            -scheme SatharielsBrowser \
+            -destination "platform=macOS" \
+            -derivedDataPath build/DerivedData \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testAdoptedWindowReusesScriptHandlers \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testWindowOpenAndTargetBlankDoNotCrash \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=-" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            ENABLE_HARDENED_RUNTIME=NO \
+            DEVELOPMENT_TEAM=""
+
       - name: Build, ad-hoc sign, and package
         run: ./scripts/build-app.sh
 
