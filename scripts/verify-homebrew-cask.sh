@@ -37,10 +37,10 @@ git -C "$TAP_DIR" init -q
 git -C "$TAP_DIR" add Casks
 git -C "$TAP_DIR" -c user.email="ci@example.com" -c user.name="ci" commit -q -m "tap"
 # Same artifact, higher cask version, so brew upgrade has something to install.
-sed 's/version "0.6.0"/version "0.6.1"/; s|download/v#{version}/|download/v0.6.0/|' \
+sed 's/version "0.6.1"/version "0.6.2"/; s|download/v#{version}/|download/v0.6.1/|' \
   "$CASK" > "$UPGRADE_DIR/Casks/sathariels-browser.rb"
-grep -q 'version "0.6.1"' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
-grep -q 'download/v0.6.0/' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
+grep -q 'version "0.6.2"' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
+grep -q 'download/v0.6.1/' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
 
 brew untap "$TAP_NAME" >/dev/null 2>&1 || true
 brew tap "$TAP_NAME" "$TAP_DIR"
@@ -49,7 +49,7 @@ test -d "$APP"
 IDENT="$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")"
 VERSION="$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist")"
 test "$IDENT" = "com.sathariels.browser"
-test "$VERSION" = "0.6.0"
+test "$VERSION" = "0.6.1"
 xattr -p com.apple.quarantine "$APP" >/dev/null 2>&1 && echo "quarantine still set" >&2 && exit 1 || true
 
 open -n "$APP"

@@ -51,6 +51,9 @@ jobs:
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testDownloadListRoundTrip \
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testUncleanExitIsDetected \
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testSessionKeepsScrollAndStateFile \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testUpdateVersionCompare \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testHomebrewCaskDetection \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testReleaseChecksumMatchesFile \
             CODE_SIGN_STYLE=Manual \
             "CODE_SIGN_IDENTITY=-" \
             CODE_SIGNING_ALLOWED=YES \
@@ -103,11 +106,20 @@ jobs:
             "$PWD/dist/appcast.xml"
           test -s "$PWD/dist/appcast.xml"
 
+      - name: Write SHA256SUMS
+        id: checksum
+        run: |
+          set -euo pipefail
+          SHA="$(shasum -a 256 "dist/Sathariels Browser-macos.zip" | awk '{print $1}')"
+          printf '%s  Sathariels.Browser-macos.zip\n' "$SHA" > dist/SHA256SUMS
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - name: Stage release files
         run: |
           mkdir -p dist/publish
           cp "dist/Sathariels Browser-macos.zip" dist/publish/
           cp "dist/Sathariels Browser.dmg" dist/publish/
+          cp dist/SHA256SUMS dist/publish/
           if [ -f dist/appcast.xml ]; then cp dist/appcast.xml dist/publish/; fi
           ls -lh dist/publish
 
@@ -123,6 +135,8 @@ jobs:
             Ad-hoc signed macOS build of Sathariels Browser.
 
             Download `Sathariels Browser-macos.zip` or `Sathariels Browser.dmg`, then drag `Sathariels Browser.app` to `/Applications`. Later versions are offered from the application menu, Check for Updates….
+
+            SHA256 Sathariels.Browser-macos.zip ${{ steps.checksum.outputs.sha }}
 
             The signature is ad-hoc, so Gatekeeper does not treat it as a Developer ID app. The first time you open it, right-click the app, choose Open, then Open again. If macOS only offers Move to Trash, use System Settings → Privacy & Security → Open Anyway.
 

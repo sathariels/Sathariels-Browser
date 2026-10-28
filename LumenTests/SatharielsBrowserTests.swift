@@ -431,6 +431,41 @@ final class SatharielsBrowserTests: XCTestCase {
         XCTAssertNil(old.stateFile)
     }
 
+    func testUpdateVersionCompare() {
+        XCTAssertTrue(VersionCompare.isNewer("v0.6.1", than: "0.6.0"))
+        XCTAssertTrue(VersionCompare.isNewer("0.10.0", than: "0.9.1"))
+        XCTAssertFalse(VersionCompare.isNewer("0.6.0", than: "0.6.0"))
+        XCTAssertFalse(VersionCompare.isNewer("0.6.0", than: "0.6.1"))
+        XCTAssertTrue(VersionCompare.same("v0.6.1", "0.6.1"))
+        XCTAssertFalse(UpdateSchedule.shouldQuery(last: Date(), now: Date(), manual: false))
+        XCTAssertTrue(UpdateSchedule.shouldQuery(last: Date().addingTimeInterval(-90_000), now: Date(), manual: false))
+        XCTAssertTrue(UpdateSchedule.shouldQuery(last: Date(), now: Date(), manual: true))
+    }
+
+    func testHomebrewCaskDetection() {
+        XCTAssertTrue(HomebrewInstall.isCaskInstall { $0 == "/opt/homebrew/Caskroom/sathariels-browser" })
+        XCTAssertTrue(HomebrewInstall.isCaskInstall { $0 == "/usr/local/Caskroom/sathariels-browser" })
+        XCTAssertFalse(HomebrewInstall.isCaskInstall { _ in false })
+        XCTAssertEqual(HomebrewInstall.brewExecutable { $0 == "/opt/homebrew/bin/brew" }, "/opt/homebrew/bin/brew")
+        XCTAssertEqual(HomebrewInstall.brewExecutable { $0 == "/usr/local/bin/brew" }, "/usr/local/bin/brew")
+        XCTAssertNil(HomebrewInstall.brewExecutable { _ in false })
+    }
+
+    func testReleaseChecksumMatchesFile() throws {
+        let sums = "d28efb6293154213328429bb39b61f359b7ca312bdbe7061a4c06ca1eddf4923  Sathariels.Browser-macos.zip\n"
+        XCTAssertEqual(ReleaseChecksum.parseSums(sums), "d28efb6293154213328429bb39b61f359b7ca312bdbe7061a4c06ca1eddf4923")
+        let body = "SHA256 Sathariels.Browser-macos.zip abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789\n"
+        XCTAssertEqual(
+            ReleaseChecksum.parseBody(body),
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+        )
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("sathariels".utf8).write(to: file)
+        let hash = try XCTUnwrap(ReleaseChecksum.sha256(file: file))
+        XCTAssertTrue(ReleaseChecksum.matches(file: file, expected: hash))
+        XCTAssertFalse(ReleaseChecksum.matches(file: file, expected: String(repeating: "ab", count: 32)))
+    }
+
     func testAsuraHostsAreNotThreatListed() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "threat-hashes", withExtension: "bin"))
         let hashes = ThreatList.decode(try Data(contentsOf: url))
