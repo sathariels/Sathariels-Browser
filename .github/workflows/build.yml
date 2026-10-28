@@ -57,7 +57,7 @@ jobs:
             build
 
       - name: Screenshot the new tab page and address bar
-        run: bash scripts/capture-ui.sh
+        run: DERIVED_DATA_PATH="$PWD/build/DerivedData" bash scripts/capture-ui.sh
 
       - name: Upload UI screenshots
         uses: actions/upload-artifact@v4
