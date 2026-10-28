@@ -264,7 +264,7 @@ final class LibraryDB {
             if let match { bind(stmt, index, match); index += 1 }
             sqlite3_bind_int(stmt, index, Int32(limit))
         } read: { stmt in
-            if let entry = historyEntry(stmt) { rows.append(entry) }
+            if let entry = self.historyEntry(stmt) { rows.append(entry) }
         }
         return rows
     }
@@ -283,7 +283,7 @@ final class LibraryDB {
             bind(stmt, 3, pattern)
             sqlite3_bind_int(stmt, 4, Int32(limit))
         } read: { stmt in
-            if let entry = historyEntry(stmt) { rows.append(entry) }
+            if let entry = self.historyEntry(stmt) { rows.append(entry) }
         }
         return rows
     }
@@ -310,10 +310,10 @@ final class LibraryDB {
             if let match { bind(stmt, index, match); index += 1 }
             if let limit { sqlite3_bind_int(stmt, index, Int32(limit)) }
         } read: { stmt in
-            guard let id = columnText(stmt, 0), let uuid = UUID(uuidString: id),
-                  let url = columnText(stmt, 1),
-                  let title = columnText(stmt, 2),
-                  let host = columnText(stmt, 3) else { return }
+            guard let id = self.columnText(stmt, 0), let uuid = UUID(uuidString: id),
+                  let url = self.columnText(stmt, 1),
+                  let title = self.columnText(stmt, 2),
+                  let host = self.columnText(stmt, 3) else { return }
             rows.append(Bookmark(
                 id: uuid,
                 url: url,
@@ -332,7 +332,7 @@ final class LibraryDB {
         run("SELECT id, fts_rowid FROM history ORDER BY last_visit ASC LIMIT ?", step: true) { stmt in
             sqlite3_bind_int(stmt, 1, Int32(extra))
         } read: { stmt in
-            if let id = columnText(stmt, 0) {
+            if let id = self.columnText(stmt, 0) {
                 victims.append((id, sqlite3_column_int64(stmt, 1)))
             }
         }
@@ -407,7 +407,7 @@ final class LibraryDB {
     private func meta(_ key: String) -> String? {
         var value: String?
         run("SELECT value FROM meta WHERE key = ? LIMIT 1", step: true) { bind($0, 1, key) } read: { stmt in
-            value = columnText(stmt, 0)
+            value = self.columnText(stmt, 0)
         }
         return value
     }
