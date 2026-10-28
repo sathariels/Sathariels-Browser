@@ -96,7 +96,7 @@ final class LibraryDB {
         guard !trimmed.isEmpty else { return recentHistory(limit: limit) }
         if let match = LibrarySearch.ftsQuery(trimmed) {
             let sql = """
-            SELECT h.id, h.url, h.title, h.host, h.visit_count, h.last_visit
+            SELECT DISTINCT h.id, h.url, h.title, h.host, h.visit_count, h.last_visit
             FROM history_fts
             JOIN history h ON h.url = history_fts.url
             WHERE history_fts MATCH ?
@@ -130,7 +130,7 @@ final class LibraryDB {
         guard !trimmed.isEmpty else { return Array(bookmarks().prefix(limit)) }
         if let match = LibrarySearch.ftsQuery(trimmed) {
             let sql = """
-            SELECT b.id, b.url, b.title, b.host, b.created
+            SELECT DISTINCT b.id, b.url, b.title, b.host, b.created
             FROM bookmark_fts
             JOIN bookmark b ON b.url = bookmark_fts.url
             WHERE bookmark_fts MATCH ?
@@ -344,6 +344,7 @@ final class LibraryDB {
 
     private func replaceFTS(table: String, rowid: Int64?, title: String, host: String, url: String) -> Int64 {
         if let rowid { deleteFTS(table: table, rowid: rowid) }
+        run("DELETE FROM \(table) WHERE url = ?") { bind($0, 1, url) }
         run("INSERT INTO \(table) (title, host, url) VALUES (?, ?, ?)") { stmt in
             bind(stmt, 1, title)
             bind(stmt, 2, host)
