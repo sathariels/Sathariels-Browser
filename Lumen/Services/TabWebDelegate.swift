@@ -1,0 +1,312 @@
+import AppKit
+import AuthenticationServices
+import Foundation
+import WebKit
+
+final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+    weak var tab: BrowserTab?
+    weak var session: BrowserSession?
+    var onClose: (() -> Void)?
+    private var promptedPassword = Set<String>()
+    private var offeredGoogleFallback = false
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "lumenPassword", session?.isPrivate != true else { return }
+        guard message.frameInfo.isMainFrame else { return }
+        guard let body = message.body as? [String: Any] else { return }
+        let username = String((body["username"] as? String ?? "").prefix(256))
+        let password = String((body["password"] as? String ?? "").prefix(1024))
+        guard !password.isEmpty else { return }
+        let host = message.frameInfo.securityOrigin.host.lowercased()
+        guard !host.isEmpty else { return }
+        if SettingsStore.shared.neverSavePasswords(for: host) { return }
+        let key = host + "\n" + username
+        if promptedPassword.contains(key) { return }
+        promptedPassword.insert(key)
+        let result = PasswordPrompt.ask(host: host, username: username)
+        switch result {
+        case .save:
+            _ = PasswordVault.save(host: host, username: username, password: password)
+        case .never:
+            SettingsStore.shared.blockPasswordSaves(for: host)
+        case .later:
+            break
+        }
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
+        if navigationAction.shouldPerformDownload {
+            decisionHandler(.download, preferences)
+            return
+        }
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.allow, preferences)
+            return
+        }
+        let scheme = url.scheme?.lowercased() ?? ""
+        switch scheme {
+        case "http", "https", "about", "file", "blob", "data":
+            decisionHandler(.allow, preferences)
+        default:
+            if navigationAction.navigationType == .linkActivated {
+                NSWorkspace.shared.open(url)
+            }
+            decisionHandler(.cancel, preferences)
+        }
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if navigationResponse.canShowMIMEType {
+            decisionHandler(.allow)
+        } else {
+            decisionHandler(.download)
+        }
+    }
+
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        DownloadController.shared.accept(download, tabID: tab?.id)
+        session?.downloadsVisible = true
+    }
+
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        DownloadController.shared.accept(download, tabID: tab?.id)
+        session?.downloadsVisible = true
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard let url = webView.url, url.absoluteString != "about:blank" else { return }
+        tab?.url = url
+        tab?.errorText = nil
+        session?.persist()
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard let tab else { return }
+        if let url = webView.url, url.scheme != "about" {
+            tab.url = url
+            if let title = webView.title, !title.isEmpty { tab.title = title }
+            if session?.isPrivate != true {
+                HistoryStore.shared.record(url: url, title: tab.title)
+            }
+            tab.loadFavicon()
+            noteGoogle(url: url, webView: webView)
+            tab.considerPasswordFill()
+        }
+        session?.persist()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        note(error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        note(error)
+    }
+
+    func webViewDidClose(_ webView: WKWebView) {
+        onClose?()
+    }
+
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard let session else { return nil }
+        let host = navigationAction.request.url?.host?.lowercased()
+            ?? tab?.url?.host?.lowercased()
+            ?? ""
+        if !host.isEmpty {
+            switch session.permissions.choice(host: host, kind: .popups) {
+            case .deny:
+                return nil
+            case .ask:
+                let allow = SitePrompt.ask(
+                    title: "Pop-up from \(host)",
+                    message: "Allow this site to open windows? Lumen remembers the choice."
+                )
+                session.permissions.set(host: host, kind: .popups, choice: allow ? .allow : .deny)
+                if !allow { return nil }
+            case .allow:
+                break
+            }
+        }
+        let sized = windowFeatures.width != nil || windowFeatures.height != nil
+        if sized {
+            return session.popups.open(
+                configuration: configuration,
+                features: windowFeatures,
+                capturePasswords: !session.isPrivate
+            )
+        }
+        return session.adoptExternalTab(configuration: configuration)
+    }
+
+    func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        let host = origin.host.lowercased()
+        guard let session, !host.isEmpty else {
+            decisionHandler(.deny)
+            return
+        }
+        switch type {
+        case .camera:
+            decisionHandler(resolve(host: host, kind: .camera, session: session))
+        case .microphone:
+            decisionHandler(resolve(host: host, kind: .microphone, session: session))
+        case .cameraAndMicrophone:
+            let camera = resolve(host: host, kind: .camera, session: session)
+            if camera == .deny {
+                session.permissions.set(host: host, kind: .microphone, choice: .deny)
+                decisionHandler(.deny)
+                return
+            }
+            let mic = resolve(host: host, kind: .microphone, session: session)
+            decisionHandler(mic == .grant && camera == .grant ? .grant : .deny)
+        @unknown default:
+            decisionHandler(.deny)
+        }
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        let alert = NSAlert()
+        alert.messageText = frame.securityOrigin.host
+        alert.informativeText = String(message.prefix(2_000))
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        completionHandler()
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = frame.securityOrigin.host
+        alert.informativeText = String(message.prefix(2_000))
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        completionHandler(alert.runModal() == .alertFirstButtonReturn)
+    }
+
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = frame.securityOrigin.host
+        alert.informativeText = String(prompt.prefix(2_000))
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.stringValue = defaultText ?? ""
+        alert.accessoryView = field
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        completionHandler(alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil)
+    }
+
+    func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.canChooseDirectories = parameters.allowsDirectories
+        panel.canChooseFiles = true
+        panel.begin { response in
+            completionHandler(response == .OK ? panel.urls : nil)
+        }
+    }
+
+    private func resolve(host: String, kind: PermissionKind, session: BrowserSession) -> WKPermissionDecision {
+        switch session.permissions.choice(host: host, kind: kind) {
+        case .allow:
+            return .grant
+        case .deny:
+            return .deny
+        case .ask:
+            let allow = SitePrompt.ask(
+                title: "\(host) wants the \(kind.label.lowercased())",
+                message: "Lumen will remember this for \(host)."
+            )
+            session.permissions.set(host: host, kind: kind, choice: allow ? .allow : .deny)
+            return allow ? .grant : .deny
+        }
+    }
+
+    private func noteGoogle(url: URL, webView: WKWebView) {
+        if GoogleSignInDetector.isRejection(url: url) {
+            tab?.googleBlocked = true
+            offerGoogle(url: url)
+            return
+        }
+        guard GoogleSignInDetector.isAccountsHost(url.host) else {
+            tab?.googleBlocked = false
+            return
+        }
+        webView.evaluateJavaScript(PageScripts.rejectionText) { [weak self] result, _ in
+            let text = result as? String ?? ""
+            if GoogleSignInDetector.isRejection(url: url, pageText: text) {
+                self?.tab?.googleBlocked = true
+                self?.offerGoogle(url: url)
+            }
+        }
+    }
+
+    private func offerGoogle(url: URL) {
+        guard !offeredGoogleFallback else { return }
+        offeredGoogleFallback = true
+        if tab == nil {
+            let alert = NSAlert()
+            alert.messageText = "Google blocked this sign-in"
+            alert.informativeText = "Lumen can open a system sign-in window. That window uses Safari's session and does not copy cookies back into Lumen."
+            alert.addButton(withTitle: "Secure session")
+            alert.addButton(withTitle: "Cancel")
+            if alert.runModal() == .alertFirstButtonReturn {
+                GoogleSignInCoordinator.shared.start(url: url)
+            }
+        }
+    }
+
+    private func note(_ error: Error) {
+        let ns = error as NSError
+        if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled { return }
+        tab?.errorText = ns.localizedDescription
+        tab?.isLoading = false
+    }
+}
+
+enum SitePrompt {
+    static func ask(title: String, message: String) -> Bool {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "Allow")
+        alert.addButton(withTitle: "Block")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+}
+
+enum PasswordPrompt {
+    enum Result { case save, later, never }
+    static func ask(host: String, username: String) -> Result {
+        let alert = NSAlert()
+        alert.messageText = "Save password for \(host)?"
+        let account = username.isEmpty ? "No username was entered." : "Account: \(username)"
+        alert.informativeText = "\(account)\nThe password is stored in the Keychain, not in a file."
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Not Now")
+        alert.addButton(withTitle: "Never for This Site")
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return .save
+        case .alertThirdButtonReturn: return .never
+        default: return .later
+        }
+    }
+}
+
+final class GoogleSignInCoordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = GoogleSignInCoordinator()
+    private var session: ASWebAuthenticationSession?
+
+    func start(url: URL) {
+        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "lumen") { callback, _ in
+            if let callback, let session = SessionRegistry.shared.keySession {
+                session.navigateFocused(to: callback)
+            }
+        }
+        auth.presentationContextProvider = self
+        auth.prefersEphemeralWebBrowserSession = false
+        session = auth
+        auth.start()
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        NSApp.keyWindow ?? ASPresentationAnchor()
+    }
+}

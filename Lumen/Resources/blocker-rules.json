@@ -1,0 +1,1202 @@
+[
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?doubleclick\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?googlesyndication\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?googleadservices\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?google-analytics\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?googletagmanager\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?googletagservices\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?2mdn\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?adnxs\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?adsrvr\\.org([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?amazon-adsystem\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?advertising\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?adform\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?adsafeprotected\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?casalemedia\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?criteo\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?criteo\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?demdex\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?everesttech\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?exelator\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?krxd\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?moatads\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?openx\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?outbrain\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?pubmatic\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?quantserve\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?rubiconproject\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?scorecardresearch\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?serving-sys\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?sharethrough\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?smartadserver\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?taboola\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?tapad\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?teads\\.tv([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?bidswitch\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?media\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?contextweb\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?bluekai\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?agkn\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?rlcdn\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?chartbeat\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?hotjar\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?mixpanel\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?segment\\.io([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?segment\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?nr-data\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?omtrdc\\.net([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?ads-twitter\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?doubleverify\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?adroll\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  },
+  {
+    "trigger": {
+      "url-filter": "^https?://([^/?#]*\\.)?lijit\\.com([:/?#]|$)",
+      "url-filter-is-case-sensitive": false,
+      "resource-type": [
+        "script",
+        "image",
+        "style-sheet",
+        "font",
+        "media",
+        "raw",
+        "svg-document",
+        "popup"
+      ],
+      "unless-domain": [
+        "*accounts.google.com",
+        "*myaccount.google.com",
+        "*accounts.youtube.com"
+      ]
+    },
+    "action": {
+      "type": "block"
+    }
+  }
+]
