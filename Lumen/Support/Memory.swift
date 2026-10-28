@@ -47,6 +47,80 @@ struct WebKitFootprint {
     var helperBytes: Int64
 }
 
+struct TabLoadInput: Equatable {
+    var id: UUID
+    var title: String
+    var estimate: Int64
+    var asleep: Bool
+}
+
+struct ProcessLoad: Equatable {
+    var pid: Int32
+    var bytes: Int64
+    var cpu: Double
+}
+
+struct TabLoadRow: Identifiable, Equatable {
+    var id: UUID
+    var title: String
+    var bytes: Int64
+    var measured: Bool
+    var cpu: Double
+    var asleep: Bool
+}
+
+enum EnergyEstimate {
+    /// CPU seconds used divided by wall seconds. 1.0 is one full core.
+    static func fraction(previous: UInt64, current: UInt64, seconds: Double) -> Double {
+        guard seconds > 0.05, current >= previous else { return 0 }
+        let delta = Double(current - previous) / 1_000_000_000
+        return min(8, delta / seconds)
+    }
+
+    static func label(_ fraction: Double) -> String {
+        if fraction < 0.05 { return "idle" }
+        if fraction < 0.25 { return "low" }
+        if fraction < 0.70 { return "med" }
+        return "high"
+    }
+}
+
+/// Pairs live tabs with WebContent processes only when the counts match.
+/// Otherwise the row keeps the tab's own estimate and `measured` stays false.
+enum TabLoadAssign {
+    static func rows(tabs: [TabLoadInput], processes: [ProcessLoad]) -> [TabLoadRow] {
+        let live = tabs.filter { !$0.asleep }
+        let asleep = tabs.filter(\.asleep)
+        var assigned: [TabLoadRow] = []
+        if !live.isEmpty, live.count == processes.count {
+            let orderedTabs = live.sorted { $0.estimate == $1.estimate ? $0.title < $1.title : $0.estimate > $1.estimate }
+            let orderedProcesses = processes.sorted { $0.bytes == $1.bytes ? $0.pid < $1.pid : $0.bytes > $1.bytes }
+            for pair in zip(orderedTabs, orderedProcesses) {
+                assigned.append(TabLoadRow(
+                    id: pair.0.id,
+                    title: pair.0.title,
+                    bytes: pair.1.bytes,
+                    measured: true,
+                    cpu: pair.1.cpu,
+                    asleep: false
+                ))
+            }
+        } else {
+            for tab in live {
+                assigned.append(TabLoadRow(id: tab.id, title: tab.title, bytes: tab.estimate, measured: false, cpu: 0, asleep: false))
+            }
+        }
+        for tab in asleep {
+            assigned.append(TabLoadRow(id: tab.id, title: tab.title, bytes: 0, measured: false, cpu: 0, asleep: true))
+        }
+        return assigned.sorted { lhs, rhs in
+            if lhs.asleep != rhs.asleep { return !lhs.asleep && rhs.asleep }
+            if lhs.bytes != rhs.bytes { return lhs.bytes > rhs.bytes }
+            return lhs.title < rhs.title
+        }
+    }
+}
+
 enum ProcessFootprint {
     private static let procPIDTaskInfo: Int32 = 4
 
@@ -94,6 +168,33 @@ enum ProcessFootprint {
         return WebKitFootprint(webContentBytes: web, webContentProcesses: webCount, helperBytes: helper)
     }
 
+    struct WebContentProcess {
+        var pid: Int32
+        var bytes: Int64
+        var cpuNanoseconds: UInt64
+    }
+
+    static func webContentProcesses() -> [WebContentProcess] {
+        let root = ProcessInfo.processInfo.processIdentifier
+        return childPIDs(of: root, depth: 4).compactMap { pid in
+            guard let name = processName(pid)?.lowercased(), name.contains("webcontent"),
+                  let info = taskInfo(pid) else { return nil }
+            return WebContentProcess(pid: pid, bytes: Int64(info.residentSize), cpuNanoseconds: info.totalUser &+ info.totalSystem)
+        }
+    }
+
+    private static func taskInfo(_ pid: Int32) -> ProcTaskInfo? {
+        var info = ProcTaskInfo()
+        let size = Int32(MemoryLayout<ProcTaskInfo>.size)
+        let result = withUnsafeMutablePointer(to: &info) { pointer -> Int32 in
+            pointer.withMemoryRebound(to: UInt8.self, capacity: Int(size)) { raw in
+                proc_pidinfo(pid, procPIDTaskInfo, 0, raw, size)
+            }
+        }
+        guard result > 0 else { return nil }
+        return info
+    }
+
     private static func childPIDs(of root: Int32, depth: Int) -> [Int32] {
         var pending = [root]
         var seen = Set<Int32>([root])
@@ -127,15 +228,7 @@ enum ProcessFootprint {
     }
 
     private static func residentBytes(_ pid: Int32) -> Int64? {
-        var info = ProcTaskInfo()
-        let size = Int32(MemoryLayout<ProcTaskInfo>.size)
-        let result = withUnsafeMutablePointer(to: &info) { pointer -> Int32 in
-            pointer.withMemoryRebound(to: UInt8.self, capacity: Int(size)) { raw in
-                proc_pidinfo(pid, procPIDTaskInfo, 0, raw, size)
-            }
-        }
-        guard result > 0 else { return nil }
-        return Int64(info.residentSize)
+        taskInfo(pid).map { Int64($0.residentSize) }
     }
 
     private static func processName(_ pid: Int32) -> String? {

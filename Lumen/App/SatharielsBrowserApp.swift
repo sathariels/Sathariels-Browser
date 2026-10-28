@@ -61,6 +61,14 @@ struct BrowserRoot: View {
                 find: { session.showFind() },
                 findNext: { session.findStep(forward: true) },
                 findPrev: { session.findStep(forward: false) },
+                history: { session.showHistory() },
+                command: { session.showCommand() },
+                bookmark: { session.bookmarkFocused() },
+                zoomIn: { session.changeZoom(1) },
+                zoomOut: { session.changeZoom(-1) },
+                zoomReset: { session.changeZoom(0) },
+                memory: { session.showMemory() },
+                pictureInPicture: { session.pictureInPicture() },
                 toggleGrok: { session.toggleGrok() },
                 toggleSplit: { session.toggleSplit() },
                 swapSplit: { session.swapSplit() },
@@ -219,6 +227,14 @@ struct BrowserActions {
     var find: () -> Void
     var findNext: () -> Void
     var findPrev: () -> Void
+    var history: () -> Void
+    var command: () -> Void
+    var bookmark: () -> Void
+    var zoomIn: () -> Void
+    var zoomOut: () -> Void
+    var zoomReset: () -> Void
+    var memory: () -> Void
+    var pictureInPicture: () -> Void
     var toggleGrok: () -> Void
     var toggleSplit: () -> Void
     var swapSplit: () -> Void
@@ -283,6 +299,24 @@ struct SatharielsBrowserCommands: Commands {
                 .keyboardShortcut("g", modifiers: .command)
             Button("Find Previous") { actions?.findPrev() }
                 .keyboardShortcut("g", modifiers: [.command, .option])
+            Divider()
+            Button("History") { actions?.history() }
+                .keyboardShortcut("y", modifiers: .command)
+            Button("Search Tabs and Library") { actions?.command() }
+                .keyboardShortcut("k", modifiers: .command)
+            Button("Bookmark This Page") { actions?.bookmark() }
+                .keyboardShortcut("d", modifiers: .command)
+            Divider()
+            Button("Zoom In") { actions?.zoomIn() }
+                .keyboardShortcut("=", modifiers: .command)
+            Button("Zoom Out") { actions?.zoomOut() }
+                .keyboardShortcut("-", modifiers: .command)
+            Button("Actual Size") { actions?.zoomReset() }
+                .keyboardShortcut("0", modifiers: .command)
+            Button("Tab Memory") { actions?.memory() }
+                .keyboardShortcut("m", modifiers: [.command, .option])
+            Button("Picture in Picture") { actions?.pictureInPicture() }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
             Divider()
             Button("Toggle Sidebar") { actions?.toggleSidebar() }
                 .keyboardShortcut("b", modifiers: [.command, .shift])

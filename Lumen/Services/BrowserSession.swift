@@ -86,6 +86,10 @@ final class BrowserSession: ObservableObject, Identifiable {
     @Published var grokVisible = false
     @Published var grokWidth: Double = 320
     @Published var downloadsVisible = false
+    @Published var historyVisible = false
+    @Published var commandVisible = false
+    @Published var commandQuery = ""
+    @Published var memoryVisible = false
     @Published var findVisible = false
     @Published var findQuery = ""
     @Published var findCount = 0
@@ -170,6 +174,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         localTask?.cancel()
         localTask = nil
         chatStore?.cancel()
+        TabLoadCenter.shared.stop()
         DownloadController.shared.releaseDownloads(ownedBy: tabs.compactMap(\.webView), tabIDs: Set(tabs.map(\.id)))
         tabs.forEach { $0.releaseWebView() }
         popups.closeAll()
@@ -357,17 +362,19 @@ final class BrowserSession: ObservableObject, Identifiable {
     func updateFind(reset: Bool) {
         guard findVisible, let tab = focusedTab else { return }
         if tab.webView == nil { tab.wake() }
-        tab.runFind(query: findQuery, reset: reset) { [weak self] count, index in
-            self?.findCount = count
-            self?.findIndex = index
+        tab.runFind(query: findQuery, forward: true, recount: true) { [weak self] count, found in
+            guard let self else { return }
+            self.findCount = count
+            self.findIndex = found && count > 0 ? 0 : -1
         }
     }
 
     func findStep(forward: Bool) {
-        guard let tab = focusedTab else { return }
-        tab.runFind(query: forward ? "next" : "prev", reset: false) { [weak self] count, index in
-            self?.findCount = count
-            self?.findIndex = index
+        guard findVisible, let tab = focusedTab, !findQuery.isEmpty else { return }
+        if tab.webView == nil { tab.wake() }
+        tab.runFind(query: findQuery, forward: forward, recount: false) { [weak self] _, found in
+            guard let self, found, self.findCount > 0 else { return }
+            self.findIndex = FindIndex.step(self.findIndex, count: self.findCount, forward: forward)
         }
     }
 
@@ -377,6 +384,49 @@ final class BrowserSession: ObservableObject, Identifiable {
         findCount = 0
         findIndex = -1
     }
+
+    func bookmarkFocused() {
+        guard let tab = focusedTab, let url = tab.url else { return }
+        BookmarkStore.shared.toggle(url: url, title: tab.title)
+    }
+
+    func changeZoom(_ delta: Int) {
+        guard let tab = focusedTab else { return }
+        if tab.webView == nil { tab.wake() }
+        guard let webView = tab.webView else { return }
+        let next = SiteZoom.adjust(Double(webView.pageZoom), delta: delta)
+        webView.pageZoom = CGFloat(next)
+        guard let host = (webView.url ?? tab.url)?.host?.lowercased(), !host.isEmpty else { return }
+        if abs(next - 1) < 0.001 {
+            LibraryDB.shared.clearZoom(host)
+        } else {
+            LibraryDB.shared.setZoom(host, next)
+        }
+    }
+
+    var mediaTab: BrowserTab? {
+        tabs.first { $0.audible || $0.playing }
+    }
+
+    func toggleMediaPlayback() {
+        mediaTab?.togglePlayback()
+    }
+
+    func pictureInPicture() {
+        (mediaTab ?? focusedTab)?.enterPictureInPicture()
+    }
+
+    func sleepTab(_ id: UUID) {
+        guard let tab = tab(id), !DownloadController.shared.isDownloading(id) else { return }
+        tab.suspend()
+    }
+
+    func showHistory() { historyVisible = true }
+    func showCommand() {
+        commandQuery = ""
+        commandVisible = true
+    }
+    func showMemory() { memoryVisible = true }
 
     func ensureChat() {
         if chatStore == nil {
@@ -698,10 +748,6 @@ final class BrowserSession: ObservableObject, Identifiable {
         measuredWebKit = footprint.map { $0.webContentBytes + $0.helperBytes } ?? 0
         if live.count == 1, let bytes = footprint?.webContentBytes, bytes > 0 {
             live[0].memory = TabMemory(bytes: bytes, kind: .measured)
-            return
-        }
-        for tab in live {
-            tab.refreshHeuristic()
         }
     }
 

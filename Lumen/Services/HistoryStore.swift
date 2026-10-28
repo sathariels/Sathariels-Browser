@@ -2,62 +2,37 @@ import Foundation
 
 final class HistoryStore: ObservableObject {
     static let shared = HistoryStore()
-    static let cap = 1500
+    static let cap = LibraryDB.historyCap
 
     @Published private(set) var entries: [HistoryEntry] = []
     private(set) var omniboxEntries: [Omnibox.Entry] = []
 
     private init() {
-        entries = JSONStore.load("history.json", as: [HistoryEntry].self) ?? []
-        rebuildIndex()
+        reload()
     }
 
     func record(url: URL, title: String) {
-        guard let normalized = Self.normalize(url), let host = url.host?.lowercased(), !host.isEmpty else { return }
-        let absolute = normalized.absoluteString
-        let trimmedTitle = String(title.prefix(180))
-        if let index = entries.firstIndex(where: { $0.url == absolute }) {
-            entries[index].visitCount += 1
-            entries[index].lastVisit = Date()
-            if !trimmedTitle.isEmpty { entries[index].title = trimmedTitle }
-        } else {
-            entries.append(HistoryEntry(
-                id: UUID(),
-                url: absolute,
-                title: trimmedTitle.isEmpty ? host : trimmedTitle,
-                host: host,
-                visitCount: 1,
-                lastVisit: Date()
-            ))
-        }
-        evict()
-        rebuildIndex()
-        JSONStore.save(entries, as: "history.json")
+        LibraryDB.shared.recordHistory(url: url, title: title)
+        reload()
     }
 
     func clear() {
-        entries = []
-        omniboxEntries = []
-        JSONStore.save(entries, as: "history.json")
+        LibraryDB.shared.clearHistory()
+        reload()
     }
 
     func delete(_ id: UUID) {
-        entries.removeAll { $0.id == id }
-        rebuildIndex()
-        JSONStore.save(entries, as: "history.json")
+        LibraryDB.shared.deleteHistory(id)
+        reload()
     }
 
-    private func evict() {
-        guard entries.count > Self.cap else { return }
-        entries.sort {
-            Omnibox.frecency(visitCount: $0.visitCount, lastVisit: $0.lastVisit) >
-            Omnibox.frecency(visitCount: $1.visitCount, lastVisit: $1.lastVisit)
-        }
-        entries = Array(entries.prefix(Self.cap))
+    func search(_ query: String, limit: Int = 50) -> [HistoryEntry] {
+        LibraryDB.shared.searchHistory(query, limit: limit)
     }
 
-    private func rebuildIndex() {
-        omniboxEntries = entries.map { entry in
+    private func reload() {
+        entries = LibraryDB.shared.recentHistory(limit: 200)
+        omniboxEntries = LibraryDB.shared.recentHistory(limit: 400).map { entry in
             Omnibox.Entry(
                 urlString: entry.url,
                 host: entry.host,

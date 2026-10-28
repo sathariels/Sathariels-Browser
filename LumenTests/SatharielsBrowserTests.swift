@@ -500,4 +500,87 @@ final class SatharielsBrowserTests: XCTestCase {
             XCTAssertFalse(hashes.contains(ThreatList.hash64(host)), host)
         }
     }
+
+    func testLibrarySearchIndexesHistoryAndBookmarks() throws {
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("library-\(UUID().uuidString).sqlite").path
+        let db = LibraryDB(path: path)
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let page = try XCTUnwrap(URL(string: "https://example.com/docs/swift-search"))
+        db.recordHistory(url: page, title: "Swift Search Guide")
+        db.recordHistory(url: page, title: "Swift Search Guide")
+        let found = db.searchHistory("swift", limit: 5)
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(found[0].visitCount, 2)
+        XCTAssertEqual(found[0].host, "example.com")
+        XCTAssertTrue(db.searchHistory("missing-token", limit: 5).isEmpty)
+        XCTAssertTrue(db.toggleBookmark(url: page, title: "Docs"))
+        XCTAssertTrue(db.containsBookmark(url: page))
+        XCTAssertEqual(db.searchBookmarks("docs", limit: 5).count, 1)
+        XCTAssertFalse(db.toggleBookmark(url: page, title: "Docs"))
+        XCTAssertFalse(db.containsBookmark(url: page))
+        db.setZoom("example.com", 1.3)
+        XCTAssertEqual(db.zoom(for: "Example.com") ?? 0, 1.3, accuracy: 0.001)
+        db.clearZoom("example.com")
+        XCTAssertNil(db.zoom(for: "example.com"))
+        XCTAssertEqual(LibrarySearch.ftsQuery("Swift Search!"), "\"swift\"* \"search\"*")
+    }
+
+    func testCommandSearchCoversTabsBookmarksAndHistory() {
+        let tab = UUID()
+        let mark = Bookmark(id: UUID(), url: "https://example.com/saved", title: "Saved", host: "example.com", created: Date())
+        let visit = HistoryEntry(id: UUID(), url: "https://example.com/old", title: "Old Page", host: "example.com", visitCount: 2, lastVisit: Date())
+        let hits = CommandSearch.results(
+            query: "old",
+            tabs: [(tab, "Inbox", "https://mail.example/")],
+            bookmarks: [mark],
+            history: [visit]
+        )
+        XCTAssertEqual(hits.map(\.kind), [.history])
+        let open = CommandSearch.results(query: "", tabs: [(tab, "Inbox", "")], bookmarks: [mark], history: [])
+        XCTAssertEqual(open.first?.kind, .tab)
+        XCTAssertTrue(open.contains { $0.kind == .bookmark })
+    }
+
+    func testFindZoomAndEnergyMath() {
+        XCTAssertEqual(FindIndex.step(-1, count: 4, forward: true), 0)
+        XCTAssertEqual(FindIndex.step(0, count: 4, forward: true), 1)
+        XCTAssertEqual(FindIndex.step(0, count: 4, forward: false), 3)
+        XCTAssertEqual(FindIndex.step(0, count: 0, forward: true), -1)
+        XCTAssertEqual(SiteZoom.adjust(1, delta: 1), 1.1, accuracy: 0.001)
+        XCTAssertEqual(SiteZoom.adjust(1, delta: -1), 0.9, accuracy: 0.001)
+        XCTAssertEqual(SiteZoom.adjust(2.4, delta: 0), 1, accuracy: 0.001)
+        XCTAssertEqual(SiteZoom.adjust(3, delta: 1), 3, accuracy: 0.001)
+        XCTAssertEqual(EnergyEstimate.fraction(previous: 1_000_000_000, current: 1_500_000_000, seconds: 2), 0.25, accuracy: 0.001)
+        XCTAssertEqual(EnergyEstimate.label(0.25), "med")
+        XCTAssertFalse(PageScripts.mediaWatcher.contains("setInterval"))
+        XCTAssertTrue(PageScripts.mediaWatcher.contains("play"))
+        XCTAssertTrue(PageScripts.pictureInPicture.contains("requestPictureInPicture"))
+        XCTAssertTrue(PageScripts.pictureInPicture.contains("webkitSetPresentationMode"))
+        XCTAssertTrue(PageScripts.findCount("a").contains("return count"))
+        XCTAssertFalse(PageScripts.findCount("a").contains("__lumenFind"))
+    }
+
+    func testTabLoadAssignsProcessesOnlyWhenCountsMatch() {
+        let heavy = UUID()
+        let light = UUID()
+        let asleep = UUID()
+        let tabs = [
+            TabLoadInput(id: heavy, title: "Heavy", estimate: 80, asleep: false),
+            TabLoadInput(id: light, title: "Light", estimate: 10, asleep: false),
+            TabLoadInput(id: asleep, title: "Asleep", estimate: 0, asleep: true),
+        ]
+        let processes = [
+            ProcessLoad(pid: 2, bytes: 20_000_000, cpu: 0.1),
+            ProcessLoad(pid: 1, bytes: 90_000_000, cpu: 0.8),
+        ]
+        let matched = TabLoadAssign.rows(tabs: tabs, processes: processes)
+        XCTAssertEqual(matched.map(\.id), [heavy, light, asleep])
+        XCTAssertEqual(matched[0].bytes, 90_000_000)
+        XCTAssertTrue(matched[0].measured)
+        XCTAssertEqual(matched[0].cpu, 0.8, accuracy: 0.001)
+        XCTAssertTrue(matched[2].asleep)
+        let unmatched = TabLoadAssign.rows(tabs: tabs, processes: [processes[0]])
+        XCTAssertFalse(unmatched.contains { $0.measured })
+        XCTAssertEqual(unmatched.first { $0.id == heavy }?.bytes, 80)
+    }
 }

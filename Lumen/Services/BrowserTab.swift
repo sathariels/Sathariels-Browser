@@ -41,6 +41,9 @@ final class BrowserTab: ObservableObject, Identifiable {
     var savedScroll: (x: Double, y: Double)?
     var stateFile: String?
     @Published var reader: ReaderPage?
+    @Published var audible = false
+    @Published var playing = false
+    @Published var muted = false
     weak var session: BrowserSession?
     let delegate: TabWebDelegate
     private var observations: [NSKeyValueObservation] = []
@@ -262,6 +265,9 @@ final class BrowserTab: ObservableObject, Identifiable {
             WebKitFactory.detach(webView)
         }
         webView = nil
+        audible = false
+        playing = false
+        muted = false
     }
 
     func insert(_ text: String, completion: @escaping (Bool) -> Void) {
@@ -277,23 +283,79 @@ final class BrowserTab: ObservableObject, Identifiable {
         )
     }
 
-    func runFind(query: String, reset: Bool, completion: @escaping (Int, Int) -> Void) {
+    func runFind(query: String, forward: Bool, recount: Bool, completion: @escaping (_ count: Int, _ found: Bool) -> Void) {
         guard let webView else {
-            completion(0, -1)
+            completion(0, false)
             return
         }
-        let script = reset
-            ? "window.__lumenFind && window.__lumenFind.run(\(Self.jsString(query)))"
-            : "window.__lumenFind && window.__lumenFind.step(\(query == "prev" ? -1 : 1))"
-        webView.evaluateJavaScript(script) { result, _ in
-            let count = Self.dictInt(result, key: "count") ?? 0
-            let index = Self.dictInt(result, key: "index") ?? -1
-            completion(count, index)
+        if query.isEmpty {
+            clearFind()
+            completion(0, false)
+            return
+        }
+        let configuration = WKFindConfiguration()
+        configuration.backwards = !forward
+        configuration.caseSensitive = false
+        configuration.wraps = true
+        if recount {
+            webView.evaluateJavaScript(PageScripts.findCount(query)) { [weak webView] value, _ in
+                let count = (value as? NSNumber)?.intValue ?? (value as? Int) ?? 0
+                guard let webView, count > 0 else {
+                    DispatchQueue.main.async { completion(0, false) }
+                    return
+                }
+                webView.find(query, configuration: configuration) { result in
+                    DispatchQueue.main.async { completion(count, result.matchFound) }
+                }
+            }
+        } else {
+            webView.find(query, configuration: configuration) { result in
+                DispatchQueue.main.async { completion(0, result.matchFound) }
+            }
         }
     }
 
     func clearFind() {
-        webView?.evaluateJavaScript("window.__lumenFind && window.__lumenFind.clear()", completionHandler: nil)
+        guard let webView else { return }
+        webView.find("", configuration: WKFindConfiguration()) { _ in }
+        webView.evaluateJavaScript("try{window.getSelection&&window.getSelection().removeAllRanges()}catch(e){}", completionHandler: nil)
+    }
+
+    func applyRememberedZoom(in webView: WKWebView) {
+        guard let host = (webView.url ?? url)?.host?.lowercased(), !host.isEmpty else { return }
+        let factor = LibraryDB.shared.zoom(for: host) ?? 1
+        if abs(Double(webView.pageZoom) - factor) > 0.01 {
+            webView.pageZoom = CGFloat(factor)
+        }
+    }
+
+    func toggleMute() {
+        guard let webView else { return }
+        let next = !muted
+        webView.evaluateJavaScript(PageScripts.muteMedia(next)) { [weak self] _, _ in
+            self?.muted = next
+            if next { self?.audible = false } else if self?.playing == true { self?.audible = true }
+        }
+    }
+
+    func togglePlayback() {
+        guard let webView else { return }
+        if playing {
+            webView.pauseAllMediaPlayback { [weak self] in
+                self?.playing = false
+                self?.audible = false
+            }
+        } else {
+            if #available(macOS 12.0, *) {
+                webView.setAllMediaPlaybackSuspended(false) { [weak self] in
+                    self?.playing = true
+                }
+            }
+        }
+    }
+
+    func enterPictureInPicture() {
+        webView?.evaluateJavaScript(PageScripts.pictureInPicture, completionHandler: nil)
     }
 
     func pageSnapshot(completion: @escaping (_ title: String, _ selection: String, _ text: String) -> Void) {
