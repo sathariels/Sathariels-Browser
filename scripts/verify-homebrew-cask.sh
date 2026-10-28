@@ -44,7 +44,7 @@ grep -q 'download/v0.6.0/' "$UPGRADE_DIR/Casks/sathariels-browser.rb"
 
 brew untap "$TAP_NAME" >/dev/null 2>&1 || true
 brew tap "$TAP_NAME" "$TAP_DIR"
-brew install --cask --no-quarantine "${TAP_NAME}/sathariels-browser"
+brew install --cask "${TAP_NAME}/sathariels-browser"
 test -d "$APP"
 IDENT="$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")"
 VERSION="$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist")"
@@ -64,7 +64,7 @@ killall "Sathariels Browser" >/dev/null 2>&1 || true
 TAP_PATH="$(brew --repo "$TAP_NAME")"
 mkdir -p "$TAP_PATH/Casks"
 cp "$UPGRADE_DIR/Casks/sathariels-browser.rb" "$TAP_PATH/Casks/sathariels-browser.rb"
-brew upgrade --cask --no-quarantine sathariels-browser
+brew upgrade --cask sathariels-browser
 test -d "$APP"
 test "$(plutil -extract CFBundleIdentifier raw "$APP/Contents/Info.plist")" = "com.sathariels.browser"
 
