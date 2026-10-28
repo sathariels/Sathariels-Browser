@@ -70,3 +70,14 @@ jobs:
           name: ui-screenshots
           path: dist/screenshots/*
           if-no-files-found: error
+
+  homebrew:
+    name: Homebrew cask
+    runs-on: macos-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install, launch, and upgrade the cask
+        timeout-minutes: 20
+        run: bash ./scripts/verify-homebrew-cask.sh
