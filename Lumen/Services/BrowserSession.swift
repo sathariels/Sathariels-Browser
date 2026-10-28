@@ -170,6 +170,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         localTask?.cancel()
         localTask = nil
         chatStore?.cancel()
+        DownloadController.shared.releaseDownloads(ownedBy: tabs.compactMap(\.webView), tabIDs: Set(tabs.map(\.id)))
         tabs.forEach { $0.releaseWebView() }
         popups.closeAll()
         SessionRegistry.shared.unregister(id)
@@ -193,6 +194,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         let tab = tabs[index]
         if tab.pinned { return }
+        DownloadController.shared.releaseDownloads(ownedBy: tab.webView.map { [$0] } ?? [], tabIDs: [id])
         tab.releaseWebView()
         tabs.remove(at: index)
         if primaryTabID == id { primaryTabID = secondaryTabID ?? tabs.first?.id }

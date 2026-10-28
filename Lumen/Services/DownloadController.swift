@@ -80,6 +80,18 @@ final class DownloadController: NSObject, ObservableObject, WKDownloadDelegate {
         }
     }
 
+    /// Drops in-flight downloads that still hold a closed tab or window's web view.
+    func releaseDownloads(ownedBy webViews: [WKWebView], tabIDs: Set<UUID>) {
+        let owned = Set(webViews.map { ObjectIdentifier($0) })
+        let ids = rows.compactMap { row -> UUID? in
+            guard row.state == .active else { return nil }
+            if let tabID = row.tabID, tabIDs.contains(tabID) { return row.id }
+            if let view = downloads[row.id]?.webView, owned.contains(ObjectIdentifier(view)) { return row.id }
+            return nil
+        }
+        ids.forEach(cancel)
+    }
+
     func cancel(_ id: UUID) {
         downloads[id]?.cancel(nil)
         mark(id, state: .cancelled, detail: "Cancelled")
