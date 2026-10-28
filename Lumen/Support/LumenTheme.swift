@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Black surfaces, restrained chrome, and muted flower accents.
+/// Black surfaces and the X blue accent.
 enum LumenTheme {
     static let bg = Color(red: 0 / 255, green: 0 / 255, blue: 0 / 255)
     static let bgRaised = Color(red: 13 / 255, green: 13 / 255, blue: 13 / 255)
@@ -39,12 +39,16 @@ enum LumenTheme {
     static let toolbar = Color(red: 15 / 255, green: 15 / 255, blue: 15 / 255)
     static let activeText = Color(red: 230 / 255, green: 235 / 255, blue: 231 / 255)
     static let tabText = Color(red: 157 / 255, green: 167 / 255, blue: 160 / 255)
-    static let accent = Color(red: 185 / 255, green: 205 / 255, blue: 194 / 255)
+    /// Twitter/X blue. Text that sits on this fill uses `accentOn` (near-black); white is about 3:1 here.
+    static let accent = Color(red: 29 / 255, green: 155 / 255, blue: 240 / 255)
+    static let accentPressed = Color(red: 26 / 255, green: 140 / 255, blue: 216 / 255)
+    static let accentFill = accent.opacity(0.14)
+    static let accentOn = Color(red: 13 / 255, green: 13 / 255, blue: 13 / 255)
     static let mark = Color(red: 30 / 255, green: 30 / 255, blue: 30 / 255)
     static let markLeaf = Color(red: 183 / 255, green: 192 / 255, blue: 186 / 255)
     static let omnibox = Color(red: 22 / 255, green: 22 / 255, blue: 22 / 255)
     static let omniboxBorder = Color(red: 47 / 255, green: 47 / 255, blue: 47 / 255)
-    static let omniboxFocus = Color(red: 112 / 255, green: 112 / 255, blue: 112 / 255)
+    static let omniboxFocus = accent
     static let omniboxText = Color(red: 235 / 255, green: 235 / 255, blue: 235 / 255)
     static let omniboxMuted = Color(red: 150 / 255, green: 150 / 255, blue: 150 / 255)
     static let profile = Color(red: 22 / 255, green: 22 / 255, blue: 22 / 255)
@@ -62,16 +66,49 @@ enum LumenTheme {
 
 struct LumenButtonStyle: ButtonStyle {
     var tint: Color = LumenTheme.amber
+    /// Hover and press use the darker accent. Leave off for the other palette colors.
+    var accent: Bool = false
 
     func makeBody(configuration: Configuration) -> some View {
+        LumenButtonBody(configuration: configuration, tint: tint, accent: accent)
+    }
+}
+
+private struct LumenButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    var tint: Color
+    var accent: Bool
+    @State private var hover = false
+
+    var body: some View {
+        let hot = accent && (hover || configuration.isPressed)
         configuration.label
             .font(LumenTheme.monoSmall)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .foregroundStyle(tint)
-            .background(configuration.isPressed ? tint.opacity(0.22) : tint.opacity(0.07))
+            .foregroundStyle(hot ? LumenTheme.accentPressed : tint)
+            .background(hot ? LumenTheme.accentPressed.opacity(0.18) : (configuration.isPressed ? tint.opacity(0.22) : tint.opacity(0.07)))
             .clipShape(RoundedRectangle(cornerRadius: 7))
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(tint.opacity(0.25), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder((hot ? LumenTheme.accentPressed : tint).opacity(0.25), lineWidth: 1))
+            .onHover { hover = $0 }
+    }
+}
+
+struct AccentFillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        AccentFillBody(configuration: configuration)
+    }
+}
+
+private struct AccentFillBody: View {
+    let configuration: ButtonStyleConfiguration
+    @State private var hover = false
+
+    var body: some View {
+        configuration.label
+            .foregroundStyle(LumenTheme.accentOn)
+            .background((hover || configuration.isPressed) ? LumenTheme.accentPressed : LumenTheme.accent)
+            .onHover { hover = $0 }
     }
 }
 

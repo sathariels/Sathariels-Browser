@@ -41,7 +41,7 @@ struct UpdateSheet: View {
             HStack(spacing: 8) {
                 if center.offer != nil {
                     Button("Update now") { center.install() }
-                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.amber))
+                        .buttonStyle(LumenButtonStyle(tint: LumenTheme.accent, accent: true))
                         .disabled(center.busy)
                     Button("Later") { center.later() }
                         .buttonStyle(LumenButtonStyle(tint: LumenTheme.textDim))
