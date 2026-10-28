@@ -58,6 +58,6 @@ final class SessionStore {
         work?.cancel()
         let item = DispatchWorkItem { [weak self] in self?.saveNow() }
         work = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: item)
     }
 }

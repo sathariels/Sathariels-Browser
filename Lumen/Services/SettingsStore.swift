@@ -22,6 +22,7 @@ final class SettingsStore: ObservableObject {
     @Published var localhostAutoReload: Bool { didSet { save(); SessionRegistry.shared.setLocalWatch(localhostAutoReload) } }
     @Published var keywordShortcuts: [KeywordShortcut] { didSet { save() } }
     @Published var passwordNeverHosts: [String] { didSet { save() } }
+    @Published var downloadAskWhere: Bool { didSet { save() } }
 
     private let defaults = UserDefaults.standard
     private var ready = false
@@ -67,6 +68,7 @@ final class SettingsStore: ObservableObject {
             keywordShortcuts = []
         }
         passwordNeverHosts = defaults.stringArray(forKey: "passwordNeverHosts") ?? []
+        downloadAskWhere = defaults.bool(forKey: "downloadAskWhere")
         ready = true
     }
 
@@ -103,6 +105,7 @@ final class SettingsStore: ObservableObject {
             defaults.set(data, forKey: "keywordShortcuts")
         }
         defaults.set(passwordNeverHosts, forKey: "passwordNeverHosts")
+        defaults.set(downloadAskWhere, forKey: "downloadAskWhere")
     }
 }
 

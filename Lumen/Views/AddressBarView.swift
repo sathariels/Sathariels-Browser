@@ -16,6 +16,7 @@ struct AddressBarView: View {
     @ObservedObject var tab: BrowserTab
     @ObservedObject private var bookmarks = BookmarkStore.shared
     @ObservedObject private var settings = SettingsStore.shared
+    @ObservedObject private var downloads = DownloadController.shared
     @Environment(\.openSettings) private var openSettings
     @State private var prefix = ""
     @State private var ghostSuffix = ""
@@ -58,6 +59,20 @@ struct AddressBarView: View {
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .help("Google account and settings")
+                navButton("text.alignleft", help: "Reading mode", enabled: tab.webView != nil) { tab.toggleReader() }
+                Button { session.downloadsVisible.toggle() } label: {
+                    VStack(spacing: 2) {
+                        Image(systemName: "arrow.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(downloads.hasActive ? LumenTheme.sky : LumenTheme.activeText)
+                        Rectangle()
+                            .fill(downloads.hasActive ? LumenTheme.sky : Color.clear)
+                            .frame(width: 18 * (downloads.activeFraction ?? 0), height: 2)
+                    }
+                    .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .help("Downloads")
                 moreMenu
             }
             .padding(.horizontal, 9)
