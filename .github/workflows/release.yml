@@ -40,6 +40,55 @@ jobs:
           test -f "dist/Sathariels Browser-macos.zip"
           test -f "dist/Sathariels Browser.dmg"
 
+      - name: Sample idle RAM
+        continue-on-error: true
+        timeout-minutes: 3
+        run: |
+          set +e
+          APP="$PWD/dist/Sathariels Browser.app"
+          cleanup() { killall "Sathariels Browser" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          echo "Launching a fresh window on the new tab page."
+          open -n "$APP"
+          for _ in $(seq 1 40); do
+            pgrep -x "Sathariels Browser" >/dev/null && break
+            sleep 0.25
+          done
+          sleep 3
+          ROOT="$(pgrep -x "Sathariels Browser" | head -n 1)"
+          echo "IDLE_RAM_ROOT=${ROOT:-missing}"
+          if [ -z "$ROOT" ]; then
+            ps -axo pid,ppid,rss,comm | grep -i -E "Sathariel|WebKit" || true
+            exit 0
+          fi
+          SEEN=" $ROOT "
+          QUEUE="$ROOT"
+          SUM=0
+          while [ -n "$QUEUE" ]; do
+            NEXT=""
+            for PID in $QUEUE; do
+              RSS="$(ps -o rss= -p "$PID" 2>/dev/null | tr -d ' ')"
+              COMM="$(ps -o comm= -p "$PID" 2>/dev/null)"
+              if [ -n "$RSS" ]; then
+                echo "pid=$PID rss_kb=$RSS comm=$COMM"
+                SUM=$((SUM + RSS))
+              fi
+              KIDS="$(pgrep -P "$PID" || true)"
+              for KID in $KIDS; do
+                case "$SEEN" in
+                  *" $KID "*) ;;
+                  *) SEEN="$SEEN$KID "; NEXT="$NEXT $KID" ;;
+                esac
+              done
+            done
+            QUEUE="$NEXT"
+          done
+          echo "IDLE_RAM_TOTAL_KB=$SUM"
+          echo "IDLE_RAM_TOTAL_MB=$((SUM / 1024))"
+          echo "Other WebKit processes on the runner:"
+          ps -axo pid,ppid,rss,comm | grep -i WebKit || true
+          exit 0
+
       - name: Resolve release tag
         id: tag
         env:

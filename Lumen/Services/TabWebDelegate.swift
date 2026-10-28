@@ -53,11 +53,11 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         let label = String((body["label"] as? String ?? "").prefix(80))
         guard prefix.count >= 2 else { return }
         let token = GhostCompletion.bumpField()
-        Task { @MainActor in
+        Task { @MainActor [weak webView] in
             try? await Task.sleep(nanoseconds: 250_000_000)
-            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            guard webView != nil, GhostCompletion.fieldIsCurrent(token) else { return }
             let full = await GhostCompletion.field(prefix: prefix, label: label)
-            guard GhostCompletion.fieldIsCurrent(token) else { return }
+            guard let webView, GhostCompletion.fieldIsCurrent(token) else { return }
             let suffix = full.flatMap { Omnibox.completionSuffix(typed: prefix, suggestion: $0) } ?? ""
             let script = "window.__lumenGhost && window.__lumenGhost.show(\(requestID), \(JSEncode.string(suffix)))"
             webView.evaluateJavaScript(script, completionHandler: nil)
@@ -263,12 +263,14 @@ final class TabWebDelegate: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     private func sniffJSON(url: URL, webView: WKWebView) {
         guard let tab, tab.jsonDocument == nil, JSONSniffer.shouldSniff(mime: tab.lastMIME, url: url) else { return }
-        webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, 240) : ''") { sample, _ in
+        webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, 240) : ''") { [weak tab, weak webView] sample, _ in
+            guard let webView, let tab, tab.webView === webView else { return }
             let text = sample as? String ?? ""
             guard JSONSniffer.looksLikeJSON(text) else { return }
-            webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, \(JSONSniffer.byteCap)) : ''") { full, _ in
+            webView.evaluateJavaScript("(document.body && document.body.innerText) ? document.body.innerText.slice(0, \(JSONSniffer.byteCap)) : ''") { [weak tab, weak webView] full, _ in
                 guard let raw = full as? String, let document = JSONDocument(raw: raw) else { return }
                 DispatchQueue.main.async {
+                    guard let webView, let tab, tab.webView === webView else { return }
                     tab.jsonDocument = document
                     if webView.canGoBack == false {
                         tab.releaseWebView()
@@ -354,11 +356,18 @@ enum PasswordPrompt {
 final class GoogleSignInCoordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let shared = GoogleSignInCoordinator()
     private var session: ASWebAuthenticationSession?
+    private var sessionToken = 0
 
     func start(url: URL) {
-        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "sathariels") { callback, _ in
+        sessionToken += 1
+        let token = sessionToken
+        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "sathariels") { [weak self] callback, _ in
             if let callback, let session = SessionRegistry.shared.keySession {
                 session.navigateFocused(to: callback)
+            }
+            DispatchQueue.main.async {
+                guard let self, self.sessionToken == token else { return }
+                self.session = nil
             }
         }
         auth.presentationContextProvider = self

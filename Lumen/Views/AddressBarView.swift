@@ -659,6 +659,10 @@ final class OmniboxTextField: NSTextField {
 final class PassHitView: NSView {
     var onMove: (() -> Void)?
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
     override func viewDidMoveToWindow() {

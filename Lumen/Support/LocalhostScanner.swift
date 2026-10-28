@@ -57,9 +57,13 @@ private final class ProbeGate {
 
     func finish(_ value: Bool) {
         lock.lock()
-        defer { lock.unlock() }
-        guard !done else { return }
+        guard !done else {
+            lock.unlock()
+            return
+        }
         done = true
+        connection.stateUpdateHandler = nil
+        lock.unlock()
         connection.cancel()
         continuation.resume(returning: value)
     }

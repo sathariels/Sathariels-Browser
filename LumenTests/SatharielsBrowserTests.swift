@@ -38,6 +38,21 @@ final class SatharielsBrowserTests: XCTestCase {
     }
 
     @MainActor
+    func testShutdownDropsWebViewsAndRefusesNewOnes() {
+        let session = BrowserSession(launch: WindowLaunch(index: -103, isPrivate: true))
+        defer { if !session.isShutDown { session.shutdown() } }
+        session.newTab(url: URL(string: "about:blank"))
+        XCTAssertNotNil(session.focusedTab?.webView)
+        let count = session.tabs.count
+        session.shutdown()
+        XCTAssertTrue(session.tabs.allSatisfy { $0.webView == nil })
+        session.newTab(url: URL(string: "https://example.com"))
+        session.navigateFocused(to: URL(string: "https://example.com")!)
+        XCTAssertEqual(session.tabs.count, count)
+        XCTAssertTrue(session.tabs.allSatisfy { $0.webView == nil })
+    }
+
+    @MainActor
     func testSleepingTabReleasesWebViewAndWakesOnSelection() {
         let session = BrowserSession(launch: WindowLaunch(index: -101, isPrivate: true))
         defer { session.shutdown() }

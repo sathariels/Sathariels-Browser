@@ -105,6 +105,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     private var localWasDown = false
     private var localSignature: String?
     private var closed = false
+    var isShutDown: Bool { closed }
 
     init(launch: WindowLaunch) {
         self.launch = launch
@@ -162,6 +163,12 @@ final class BrowserSession: ObservableObject, Identifiable {
         guard !closed else { return }
         closed = true
         timer?.invalidate()
+        timer = nil
+        localTimer?.invalidate()
+        localTimer = nil
+        localTask?.cancel()
+        localTask = nil
+        chatStore?.cancel()
         tabs.forEach { $0.releaseWebView() }
         popups.closeAll()
         SessionRegistry.shared.unregister(id)
@@ -171,6 +178,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func newTab(url: URL? = nil) {
+        guard !closed else { return }
         let tab = makeTab(url: url, title: "New Tab")
         tabs.append(tab)
         show(tab, wake: false)
@@ -272,6 +280,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     }
 
     func navigateFocused(to url: URL) {
+        guard !closed else { return }
         if focusedTab == nil { newTab(url: url); return }
         focusedTab?.navigate(to: url)
         persist()
@@ -431,7 +440,7 @@ final class BrowserSession: ObservableObject, Identifiable {
             return
         }
         let fallbackURL = focusedTab?.url?.absoluteString ?? ""
-        let deliver: (String, String, String) -> Void = { title, selection, text in
+        let deliver: (String, String, String) -> Void = { [weak self] title, selection, text in
             var lines = [title, fallbackURL]
             if !selection.isEmpty {
                 lines.append(selection)
@@ -443,7 +452,7 @@ final class BrowserSession: ObservableObject, Identifiable {
             board.clearContents()
             board.setString(payload, forType: .string)
             if !NSWorkspace.shared.open(url) {
-                self.botNotice = "Copied the page. Nothing accepted \(raw)."
+                self?.botNotice = "Copied the page. Nothing accepted \(raw)."
             }
         }
         if let tab = focusedTab {
@@ -556,9 +565,10 @@ final class BrowserSession: ObservableObject, Identifiable {
         request.httpMethod = "HEAD"
         request.timeoutInterval = 1.5
         localTask?.cancel()
-        localTask = URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
+        localTask = URLSession.shared.dataTask(with: request) { [weak self, weak tab] _, response, error in
             DispatchQueue.main.async {
-                self?.noteLocalhost(response: response as? HTTPURLResponse, error: error, tab: tab)
+                guard let self, let tab else { return }
+                self.noteLocalhost(response: response as? HTTPURLResponse, error: error, tab: tab)
             }
         }
         localTask?.resume()
@@ -576,7 +586,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         let changed = localSignature != nil && signature != localSignature
         localWasDown = false
         localSignature = signature
-        if cameBack || changed {
+        if (cameBack || changed), !closed, tab.webView != nil {
             tab.reload()
         }
     }

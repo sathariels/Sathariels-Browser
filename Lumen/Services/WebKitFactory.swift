@@ -117,11 +117,14 @@ enum WebKitFactory {
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
+        let controller = webView.configuration.userContentController
         let names = objc_getAssociatedObject(webView, &handlerNamesKey) as? [String] ?? []
         for name in names {
-            webView.configuration.userContentController.removeScriptMessageHandler(forName: name)
+            controller.removeScriptMessageHandler(forName: name)
         }
-        webView.configuration.userContentController.removeAllUserScripts()
+        controller.removeAllScriptMessageHandlers()
+        controller.removeAllUserScripts()
+        controller.removeAllContentRuleLists()
         webView.removeFromSuperview()
         objc_setAssociatedObject(webView, &proxyKey, nil, .OBJC_ASSOCIATION_ASSIGN)
         objc_setAssociatedObject(webView, &handlerNamesKey, nil, .OBJC_ASSOCIATION_ASSIGN)

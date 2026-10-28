@@ -55,6 +55,7 @@ final class PopupCenter: NSObject, NSWindowDelegate {
     func closeAll() {
         for box in boxes.values {
             WebKitFactory.detach(box.webView)
+            box.window.contentView = nil
             box.window.delegate = nil
             box.window.close()
         }
@@ -72,6 +73,8 @@ final class PopupCenter: NSObject, NSWindowDelegate {
               let id = UUID(uuidString: token as String),
               let box = boxes.removeValue(forKey: id) else { return }
         WebKitFactory.detach(box.webView)
+        box.window.contentView = nil
+        box.window.delegate = nil
     }
 }
 

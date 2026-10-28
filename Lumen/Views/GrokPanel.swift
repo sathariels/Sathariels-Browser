@@ -185,10 +185,12 @@ struct GrokPanel: View {
             chat.send(pageTitle: tab.title, pageURL: tab.url?.absoluteString ?? "", selection: "", pageText: "", session: session)
             return
         }
-        tab.pageSnapshot { title, selection, text in
+        let pageURL = tab.url?.absoluteString ?? ""
+        tab.pageSnapshot { [weak session, weak chat] title, selection, text in
+            guard let session, let chat else { return }
             chat.send(
                 pageTitle: title,
-                pageURL: tab.url?.absoluteString ?? "",
+                pageURL: pageURL,
                 selection: selection,
                 pageText: text,
                 session: session

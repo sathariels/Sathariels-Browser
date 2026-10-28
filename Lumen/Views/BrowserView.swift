@@ -460,6 +460,9 @@ struct KeyWindowProbe: NSViewRepresentable {
 
     final class ProbeView: NSView {
         weak var session: BrowserSession?
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             NotificationCenter.default.removeObserver(self)

@@ -259,7 +259,7 @@ def write_project() -> None:
         "GENERATE_INFOPLIST_FILE": "NO",
         "INFOPLIST_FILE": "Lumen/Info.plist",
         "LD_RUNPATH_SEARCH_PATHS": '"$(inherited) @executable_path/../Frameworks"',
-        "MARKETING_VERSION": "0.2.0",
+        "MARKETING_VERSION": "0.3.0",
         "PRODUCT_BUNDLE_IDENTIFIER": "com.sathariels.browser",
         "PRODUCT_MODULE_NAME": "SatharielsBrowser",
         "PRODUCT_NAME": '"Sathariels Browser"',
