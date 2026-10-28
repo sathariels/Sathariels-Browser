@@ -74,6 +74,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     let popups = PopupCenter()
 
     @Published var tabs: [BrowserTab] = []
+    @Published var groups: [TabGroup] = []
     @Published var primaryTabID: UUID?
     @Published var secondaryTabID: UUID?
     @Published var focusedPane: Pane = .primary
@@ -191,6 +192,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     func closeTab(_ id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         let tab = tabs[index]
+        if tab.pinned { return }
         tab.releaseWebView()
         tabs.remove(at: index)
         if primaryTabID == id { primaryTabID = secondaryTabID ?? tabs.first?.id }
@@ -203,6 +205,43 @@ final class BrowserSession: ObservableObject, Identifiable {
         }
         focusCurrent()
         persist()
+    }
+
+    func setPinned(_ id: UUID, _ pinned: Bool) {
+        guard let tab = tab(id) else { return }
+        tab.pinned = pinned
+        if pinned { tab.groupID = nil }
+        persist()
+    }
+
+    func makeGroup(named name: String, tabID: UUID) {
+        guard let tab = tab(tabID) else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let group = TabGroup(id: UUID(), name: String(trimmed.prefix(40)), colorIndex: tab.colorIndex, collapsed: false)
+        groups.append(group)
+        tab.groupID = group.id
+        tab.pinned = false
+        persist()
+    }
+
+    func setGroupCollapsed(_ id: UUID, _ collapsed: Bool) {
+        guard let index = groups.firstIndex(where: { $0.id == id }) else { return }
+        groups[index].collapsed = collapsed
+        if collapsed {
+            if let focused = focusedTab, focused.groupID == id, let other = tabs.first(where: { !isCollapsed($0) }) {
+                select(other.id)
+            }
+            for tab in tabs where tab.groupID == id && !tab.pinned {
+                tab.suspend()
+            }
+        }
+        persist()
+    }
+
+    func isCollapsed(_ tab: BrowserTab) -> Bool {
+        guard let id = tab.groupID, let group = groups.first(where: { $0.id == id }) else { return false }
+        return group.collapsed
     }
 
     func select(_ id: UUID) {
@@ -487,6 +526,7 @@ final class BrowserSession: ObservableObject, Identifiable {
         sidebarWidth = min(420, max(200, snapshot.sidebarWidth))
         splitFraction = CGFloat(min(0.75, max(0.25, snapshot.splitFraction)))
         focusedPane = snapshot.focusedPane
+        groups = snapshot.groups
         tabs = snapshot.tabs.map { item in
             let tab = makeTab(
                 url: item.url.flatMap(URL.init(string:)),
@@ -494,6 +534,8 @@ final class BrowserSession: ObservableObject, Identifiable {
                 id: item.id,
                 colorIndex: item.colorIndex
             )
+            tab.pinned = item.pinned
+            tab.groupID = item.groupID
             return tab
         }
         if tabs.isEmpty {
@@ -511,7 +553,7 @@ final class BrowserSession: ObservableObject, Identifiable {
     private func focusCurrent() {
         let tab = focusedTab
         tab?.lastFocused = Date()
-        if let tab, tab.url != nil, tab.webView == nil {
+        if let tab, tab.url != nil, tab.webView == nil, !isCollapsed(tab) {
             tab.wake()
         }
     }
@@ -608,8 +650,9 @@ final class BrowserSession: ObservableObject, Identifiable {
         WindowSnapshot(
             index: windowIndex,
             tabs: tabs.map {
-                TabSnapshot(id: $0.id, url: $0.url?.absoluteString, title: $0.title, colorIndex: $0.colorIndex)
+                TabSnapshot(id: $0.id, url: $0.url?.absoluteString, title: $0.title, colorIndex: $0.colorIndex, pinned: $0.pinned, groupID: $0.groupID)
             },
+            groups: groups,
             primaryTabID: primaryTabID,
             secondaryTabID: secondaryTabID,
             focusedPane: focusedPane,

@@ -78,6 +78,7 @@ enum WebKitFactory {
         }
         configuration.userContentController = controller
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        ExtensionSupport.attach(configuration)
         return configuration
     }
 

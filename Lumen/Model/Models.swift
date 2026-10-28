@@ -103,21 +103,73 @@ struct HistoryEntry: Codable, Identifiable, Equatable {
     var lastVisit: Date
 }
 
+struct TabGroup: Codable, Equatable, Identifiable {
+    var id: UUID
+    var name: String
+    var colorIndex: Int
+    var collapsed: Bool
+}
+
 struct TabSnapshot: Codable, Equatable, Identifiable {
     var id: UUID
     var url: String?
     var title: String
     var colorIndex: Int
+    var pinned: Bool
+    var groupID: UUID?
+
+    init(id: UUID, url: String?, title: String, colorIndex: Int, pinned: Bool = false, groupID: UUID? = nil) {
+        self.id = id
+        self.url = url
+        self.title = title
+        self.colorIndex = colorIndex
+        self.pinned = pinned
+        self.groupID = groupID
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        url = try container.decodeIfPresent(String.self, forKey: .url)
+        title = try container.decode(String.self, forKey: .title)
+        colorIndex = try container.decode(Int.self, forKey: .colorIndex)
+        pinned = try container.decodeIfPresent(Bool.self, forKey: .pinned) ?? false
+        groupID = try container.decodeIfPresent(UUID.self, forKey: .groupID)
+    }
 }
 
 struct WindowSnapshot: Codable, Equatable {
     var index: Int
     var tabs: [TabSnapshot]
+    var groups: [TabGroup]
     var primaryTabID: UUID?
     var secondaryTabID: UUID?
     var focusedPane: Pane
     var splitFraction: Double
     var sidebarWidth: Double
+
+    init(index: Int, tabs: [TabSnapshot], groups: [TabGroup] = [], primaryTabID: UUID?, secondaryTabID: UUID?, focusedPane: Pane, splitFraction: Double, sidebarWidth: Double) {
+        self.index = index
+        self.tabs = tabs
+        self.groups = groups
+        self.primaryTabID = primaryTabID
+        self.secondaryTabID = secondaryTabID
+        self.focusedPane = focusedPane
+        self.splitFraction = splitFraction
+        self.sidebarWidth = sidebarWidth
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        index = try container.decode(Int.self, forKey: .index)
+        tabs = try container.decode([TabSnapshot].self, forKey: .tabs)
+        groups = try container.decodeIfPresent([TabGroup].self, forKey: .groups) ?? []
+        primaryTabID = try container.decodeIfPresent(UUID.self, forKey: .primaryTabID)
+        secondaryTabID = try container.decodeIfPresent(UUID.self, forKey: .secondaryTabID)
+        focusedPane = try container.decode(Pane.self, forKey: .focusedPane)
+        splitFraction = try container.decode(Double.self, forKey: .splitFraction)
+        sidebarWidth = try container.decode(Double.self, forKey: .sidebarWidth)
+    }
 }
 
 struct SessionFile: Codable, Equatable {

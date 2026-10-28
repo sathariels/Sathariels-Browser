@@ -22,6 +22,8 @@
 		9B369BEAFE5F8D5B1E15CC2C /* ContentBlocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2E172077430F572EAB66BA /* ContentBlocker.swift */; };
 		2AFC2C428F628A1935C1193F /* DownloadController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/DownloadController.swift"; sourceTree = "<group>"; };
 		27070F6EBAFC5DBB28F149BB /* DownloadController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AFC2C428F628A1935C1193F /* DownloadController.swift */; };
+		C83F3FB4455F56E2BC2353CD /* ExtensionCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ExtensionCenter.swift"; sourceTree = "<group>"; };
+		51BA37AAAA1B87318E9587C5 /* ExtensionCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C83F3FB4455F56E2BC2353CD /* ExtensionCenter.swift */; };
 		C03CD11C29D2C03346905E65 /* FilterListCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/FilterListCompiler.swift"; sourceTree = "<group>"; };
 		C36AF754F5003DDAF5F717F3 /* FilterListCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03CD11C29D2C03346905E65 /* FilterListCompiler.swift */; };
 		56572FC9319103CE5BF085E4 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/HistoryStore.swift"; sourceTree = "<group>"; };
@@ -106,6 +108,34 @@
 		5116A664840030A94246D401 /* blocker-rules.json in Resources */ = {isa = PBXBuildFile; fileRef = 4ECD08EEF314FEA38F31405F /* blocker-rules.json */; };
 		8CB2EF8DCE20B11907110038 /* blocker-0.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-0.json"; sourceTree = "<group>"; };
 		A2BD1C38843DEB07133FD627 /* blocker-0.json in Resources */ = {isa = PBXBuildFile; fileRef = 8CB2EF8DCE20B11907110038 /* blocker-0.json */; };
+		F97EFD19D40C772B6BEC8639 /* blocker-1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-1.json"; sourceTree = "<group>"; };
+		DD70417F7D37AAC2DFC8007C /* blocker-1.json in Resources */ = {isa = PBXBuildFile; fileRef = F97EFD19D40C772B6BEC8639 /* blocker-1.json */; };
+		D4D33EFF399AC66B06994B6F /* blocker-10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-10.json"; sourceTree = "<group>"; };
+		36277E3406204F53D2965522 /* blocker-10.json in Resources */ = {isa = PBXBuildFile; fileRef = D4D33EFF399AC66B06994B6F /* blocker-10.json */; };
+		403D4E9DE44C939E550F7D5C /* blocker-11.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-11.json"; sourceTree = "<group>"; };
+		6F8A6AA2630BDB9DF527715E /* blocker-11.json in Resources */ = {isa = PBXBuildFile; fileRef = 403D4E9DE44C939E550F7D5C /* blocker-11.json */; };
+		410A2E605E9478D7E1567AF8 /* blocker-12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-12.json"; sourceTree = "<group>"; };
+		F14DC9AEAEA356C62AC3CE5F /* blocker-12.json in Resources */ = {isa = PBXBuildFile; fileRef = 410A2E605E9478D7E1567AF8 /* blocker-12.json */; };
+		6AB147ECA6D00FF53A6D0D04 /* blocker-13.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-13.json"; sourceTree = "<group>"; };
+		5C52EEED85E5BE9F05E47EFE /* blocker-13.json in Resources */ = {isa = PBXBuildFile; fileRef = 6AB147ECA6D00FF53A6D0D04 /* blocker-13.json */; };
+		BCD18501B0CAF0FF9D996C65 /* blocker-14.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-14.json"; sourceTree = "<group>"; };
+		AB9F85883A07D6E46A2513DE /* blocker-14.json in Resources */ = {isa = PBXBuildFile; fileRef = BCD18501B0CAF0FF9D996C65 /* blocker-14.json */; };
+		D506B0DA752685A050163FA8 /* blocker-2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-2.json"; sourceTree = "<group>"; };
+		64880DD7AE5795DDD3F1222B /* blocker-2.json in Resources */ = {isa = PBXBuildFile; fileRef = D506B0DA752685A050163FA8 /* blocker-2.json */; };
+		760404DF108BF62878A77A3C /* blocker-3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-3.json"; sourceTree = "<group>"; };
+		EA587765ACBE7D20140C1422 /* blocker-3.json in Resources */ = {isa = PBXBuildFile; fileRef = 760404DF108BF62878A77A3C /* blocker-3.json */; };
+		F3CCB5E732A654660653E16D /* blocker-4.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-4.json"; sourceTree = "<group>"; };
+		30BFB87622DF455A489CDD68 /* blocker-4.json in Resources */ = {isa = PBXBuildFile; fileRef = F3CCB5E732A654660653E16D /* blocker-4.json */; };
+		5CA4109A1FB466D59E2B7546 /* blocker-5.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-5.json"; sourceTree = "<group>"; };
+		2ADEBE863A19F8737AD2C801 /* blocker-5.json in Resources */ = {isa = PBXBuildFile; fileRef = 5CA4109A1FB466D59E2B7546 /* blocker-5.json */; };
+		2C1842110183F6CD12BC7AB0 /* blocker-6.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-6.json"; sourceTree = "<group>"; };
+		726B6989AA59B789F83B1ABA /* blocker-6.json in Resources */ = {isa = PBXBuildFile; fileRef = 2C1842110183F6CD12BC7AB0 /* blocker-6.json */; };
+		277C2177262B358E102B334C /* blocker-7.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-7.json"; sourceTree = "<group>"; };
+		D1A351A879646E5D98ECF5B5 /* blocker-7.json in Resources */ = {isa = PBXBuildFile; fileRef = 277C2177262B358E102B334C /* blocker-7.json */; };
+		15F9451239D1772C5DC8811A /* blocker-8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-8.json"; sourceTree = "<group>"; };
+		A828920B7686FFA4F52CE905 /* blocker-8.json in Resources */ = {isa = PBXBuildFile; fileRef = 15F9451239D1772C5DC8811A /* blocker-8.json */; };
+		6C20ADF1C03895B8A00EBC2D /* blocker-9.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/filters/blocker-9.json"; sourceTree = "<group>"; };
+		5F0379B64D93C70CF2FB4C59 /* blocker-9.json in Resources */ = {isa = PBXBuildFile; fileRef = 6C20ADF1C03895B8A00EBC2D /* blocker-9.json */; };
 		9578253E46EC019F1E048548 /* threat-hashes.bin */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/threat-hashes.bin"; sourceTree = "<group>"; };
 		2F539E36B5C340815070BD34 /* threat-hashes.bin in Resources */ = {isa = PBXBuildFile; fileRef = 9578253E46EC019F1E048548 /* threat-hashes.bin */; };
 		472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SatharielsBrowserTests.swift"; sourceTree = "<group>"; };
@@ -123,6 +153,7 @@
 				949AD731D22B481BCC83E266,
 				0F2E172077430F572EAB66BA,
 				2AFC2C428F628A1935C1193F,
+				C83F3FB4455F56E2BC2353CD,
 				C03CD11C29D2C03346905E65,
 				56572FC9319103CE5BF085E4,
 				4A6A518165CEC45E6A504B7F,
@@ -166,6 +197,20 @@
 				1507F021100E808DBE2FAA00,
 				1D40A5108B86EE279250E03B,
 				8CB2EF8DCE20B11907110038,
+				F97EFD19D40C772B6BEC8639,
+				D4D33EFF399AC66B06994B6F,
+				403D4E9DE44C939E550F7D5C,
+				410A2E605E9478D7E1567AF8,
+				6AB147ECA6D00FF53A6D0D04,
+				BCD18501B0CAF0FF9D996C65,
+				D506B0DA752685A050163FA8,
+				760404DF108BF62878A77A3C,
+				F3CCB5E732A654660653E16D,
+				5CA4109A1FB466D59E2B7546,
+				2C1842110183F6CD12BC7AB0,
+				277C2177262B358E102B334C,
+				15F9451239D1772C5DC8811A,
+				6C20ADF1C03895B8A00EBC2D,
 				9578253E46EC019F1E048548
 			);
 			path = Lumen;
@@ -226,6 +271,7 @@
 				9EA10B524A44D79E9259EADB,
 				9B369BEAFE5F8D5B1E15CC2C,
 				27070F6EBAFC5DBB28F149BB,
+				51BA37AAAA1B87318E9587C5,
 				C36AF754F5003DDAF5F717F3,
 				C65492A8541143BB5CF0FF68,
 				7EEFFA01FB36B9426674C8A4,
@@ -274,6 +320,20 @@
 				FB90684E69A6C96ED866993E,
 				5116A664840030A94246D401,
 				A2BD1C38843DEB07133FD627,
+				DD70417F7D37AAC2DFC8007C,
+				36277E3406204F53D2965522,
+				6F8A6AA2630BDB9DF527715E,
+				F14DC9AEAEA356C62AC3CE5F,
+				5C52EEED85E5BE9F05E47EFE,
+				AB9F85883A07D6E46A2513DE,
+				64880DD7AE5795DDD3F1222B,
+				EA587765ACBE7D20140C1422,
+				30BFB87622DF455A489CDD68,
+				2ADEBE863A19F8737AD2C801,
+				726B6989AA59B789F83B1ABA,
+				D1A351A879646E5D98ECF5B5,
+				A828920B7686FFA4F52CE905,
+				5F0379B64D93C70CF2FB4C59,
 				2F539E36B5C340815070BD34
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -352,7 +412,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.4.0;
+				CURRENT_PROJECT_VERSION = 0.5.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -361,7 +421,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
 				PRODUCT_MODULE_NAME = SatharielsBrowser;
@@ -382,7 +442,7 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 0.4.0;
+				CURRENT_PROJECT_VERSION = 0.5.0;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -391,7 +451,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lumen/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				SU_PUBLIC_ED_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.sathariels.browser;
 				PRODUCT_MODULE_NAME = SatharielsBrowser;

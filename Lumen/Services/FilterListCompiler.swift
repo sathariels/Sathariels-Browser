@@ -3,7 +3,7 @@ import Foundation
 /// Converts a conservative subset of Adblock Plus filters into WebKit content rules.
 /// Network rules are `||host^` and simple path anchors. Cosmetic rules are plain class and id selectors.
 enum FilterListCompiler {
-    static let chunkLimit = 140_000
+    static let chunkLimit = 8_000
     private static let resourceTypes = [
         "script": "script",
         "image": "image",

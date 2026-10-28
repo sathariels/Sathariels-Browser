@@ -53,6 +53,17 @@ final class SatharielsBrowserTests: XCTestCase {
     }
 
     @MainActor
+    func testPinnedTabIsNotClosedByCommand() throws {
+        let session = BrowserSession(launch: WindowLaunch(index: -104, isPrivate: true))
+        defer { session.shutdown() }
+        let id = try XCTUnwrap(session.focusedTab?.id)
+        session.setPinned(id, true)
+        session.closeTab(id)
+        XCTAssertEqual(session.tabs.count, 1)
+        XCTAssertTrue(session.tabs[0].pinned)
+    }
+
+    @MainActor
     func testSleepingTabReleasesWebViewAndWakesOnSelection() {
         let session = BrowserSession(launch: WindowLaunch(index: -101, isPrivate: true))
         defer { session.shutdown() }

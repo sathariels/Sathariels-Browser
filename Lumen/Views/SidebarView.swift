@@ -55,7 +55,33 @@ struct SidebarView: View {
             LazyVStack(alignment: .leading, spacing: 0) {
                 switch session.upperPane {
                 case .tabs:
-                    ForEach(session.tabs) { tab in
+                    ForEach(session.tabs.filter(\.pinned)) { tab in
+                        TabRow(session: session, tab: tab)
+                    }
+                    ForEach(session.groups) { group in
+                        if session.tabs.contains(where: { $0.groupID == group.id }) {
+                            Button {
+                                session.setGroupCollapsed(group.id, !group.collapsed)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Rectangle().fill(LumenTheme.tabColor(group.colorIndex)).frame(width: 8, height: 8)
+                                    Text(group.collapsed ? "\(group.name) +" : group.name)
+                                        .font(LumenTheme.monoSmall)
+                                        .foregroundStyle(LumenTheme.text)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                            }
+                            .buttonStyle(.plain)
+                            if !group.collapsed {
+                                ForEach(session.tabs.filter { $0.groupID == group.id && !$0.pinned }) { tab in
+                                    TabRow(session: session, tab: tab)
+                                }
+                            }
+                        }
+                    }
+                    ForEach(session.tabs.filter { !$0.pinned && $0.groupID == nil }) { tab in
                         TabRow(session: session, tab: tab)
                     }
                     Button("New tab") { session.newTab() }
@@ -239,13 +265,15 @@ struct TabRow: View {
             Text(MemoryFormat.badge(bytes: tab.memory.bytes, kind: tab.memory.kind))
                 .font(LumenTheme.micro)
                 .foregroundStyle(LumenTheme.textDim)
-            Button {
-                session.closeTab(tab.id)
-            } label: {
-                Image(systemName: "xmark").foregroundStyle(LumenTheme.textDim)
+            if !tab.pinned {
+                Button {
+                    session.closeTab(tab.id)
+                } label: {
+                    Image(systemName: "xmark").foregroundStyle(LumenTheme.textDim)
+                }
+                .buttonStyle(.plain)
+                .help("Close tab")
             }
-            .buttonStyle(.plain)
-            .help("Close tab")
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 7)
@@ -266,7 +294,11 @@ struct TabRow: View {
                     Button("Tag \(index + 1)") { tab.colorIndex = index }
                 }
             }
-            Button("Close") { session.closeTab(tab.id) }
+            Button(tab.pinned ? "Unpin" : "Pin") { session.setPinned(tab.id, !tab.pinned) }
+            Button("New Group…") { TabGroupPrompt.create(session: session, tabID: tab.id) }
+            if !tab.pinned {
+                Button("Close") { session.closeTab(tab.id) }
+            }
         }
         .help(tab.memory.kind == .estimate ? "Estimated from page resources, not process RSS." : "Tab memory")
     }

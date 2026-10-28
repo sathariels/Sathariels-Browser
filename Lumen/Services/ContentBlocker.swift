@@ -40,14 +40,59 @@ final class ContentBlocker: ObservableObject {
 
     private init() {}
 
-    func prepare() {
+    /// Does not read or compile the filter JSON. The new-tab window stays idle until a page needs a web view.
+    func prepare() {}
+
+    func ensureLoaded() {
         guard !started else { return }
         started = true
         phase = .loading
         Task.detached(priority: .utility) { [weak self] in
-            await self?.compileCookieRule()
-            await self?.loadCachedOrBundled()
-            await self?.refreshFiltersIfDue()
+            guard let self else { return }
+            await self.compileCookieRule()
+            if await self.loadPrecompiled() {
+                if UserDefaults.standard.object(forKey: "blockerListRefresh") == nil {
+                    UserDefaults.standard.set(Date(), forKey: "blockerListRefresh")
+                }
+            } else {
+                await self.loadCachedOrBundled()
+                if UserDefaults.standard.object(forKey: "blockerListRefresh") == nil {
+                    UserDefaults.standard.set(Date(), forKey: "blockerListRefresh")
+                }
+            }
+            await self.refreshFiltersIfDue()
+        }
+    }
+
+    func precompileBundled(to directory: URL) async {
+        let files = bundledFilterFiles()
+        guard !files.isEmpty else { return }
+        var targets = [directory]
+        if let support = precompiledStoreURL() { targets.append(support) }
+        for target in targets {
+            try? FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+            guard let store = WKContentRuleListStore(url: target) else { continue }
+            var identifiers: [String] = []
+            var ruleCount = 0
+            for (index, file) in files.enumerated() {
+                guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }
+                let count = Self.actionCount(source)
+                let identifier = "sathariels.prebuilt.\(index)"
+                if (try? await compile(source, identifier: identifier, store: store)) != nil {
+                    identifiers.append(identifier)
+                    ruleCount += count
+                }
+            }
+            guard !identifiers.isEmpty else { continue }
+            let manifest: [String: Any] = ["identifiers": identifiers, "count": ruleCount]
+            if let data = try? JSONSerialization.data(withJSONObject: manifest) {
+                try? data.write(to: target.appendingPathComponent("manifest.json"), options: .atomic)
+            }
+            if let support = supportDirectory() {
+                try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
+                try? target.path.write(to: support.appendingPathComponent("precompile-ready"), atomically: true, encoding: .utf8)
+            }
+            return
         }
     }
 
@@ -79,7 +124,7 @@ final class ContentBlocker: ObservableObject {
     }
 
     private func refreshFiltersIfDue() async {
-        let last = UserDefaults.standard.object(forKey: "blockerListRefresh") as? Date ?? .distantPast
+        guard let last = UserDefaults.standard.object(forKey: "blockerListRefresh") as? Date else { return }
         guard Date().timeIntervalSince(last) > 86_400 else { return }
         guard !refreshing else { return }
         refreshing = true
@@ -127,8 +172,38 @@ final class ContentBlocker: ObservableObject {
         await publish(lists, count: ruleCount, rebuild: rebuild)
     }
 
+    private func loadPrecompiled() async -> Bool {
+        guard let bundled = Bundle.main.resourceURL?.appendingPathComponent("PrecompiledRules", isDirectory: true),
+              FileManager.default.fileExists(atPath: bundled.appendingPathComponent("manifest.json").path),
+              let manifest = try? Data(contentsOf: bundled.appendingPathComponent("manifest.json")),
+              let json = try? JSONSerialization.jsonObject(with: manifest) as? [String: Any],
+              let identifiers = json["identifiers"] as? [String], !identifiers.isEmpty,
+              let destination = precompiledStoreURL() else { return false }
+        let copiedMarker = destination.appendingPathComponent("manifest.json")
+        if !FileManager.default.fileExists(atPath: copiedMarker.path) {
+            try? FileManager.default.removeItem(at: destination)
+            try? FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? FileManager.default.copyItem(at: bundled, to: destination)
+        }
+        guard let store = WKContentRuleListStore(url: destination) else { return false }
+        var lists: [WKContentRuleList] = []
+        for identifier in identifiers {
+            if let list = try? await store.contentRuleList(forIdentifier: identifier) {
+                lists.append(list)
+            }
+        }
+        guard lists.count == identifiers.count else { return false }
+        let count = json["count"] as? Int ?? lists.count
+        await publish(lists, count: count, rebuild: true)
+        return true
+    }
+
     private func compile(_ source: String, identifier: String) async throws -> WKContentRuleList {
         guard let store = await WKContentRuleListStore.default() else { throw CocoaError(.coderInvalidValue) }
+        return try await compile(source, identifier: identifier, store: store)
+    }
+
+    private func compile(_ source: String, identifier: String, store: WKContentRuleListStore) async throws -> WKContentRuleList {
         if let existing = try? await store.contentRuleList(forIdentifier: identifier) {
             return existing
         }
@@ -176,6 +251,15 @@ final class ContentBlocker: ObservableObject {
             return [legacy]
         }
         return []
+    }
+
+    private func supportDirectory() -> URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("SatharielsBrowser", isDirectory: true)
+    }
+
+    private func precompiledStoreURL() -> URL? {
+        supportDirectory()?.appendingPathComponent("PrecompiledRules", isDirectory: true)
     }
 
     private func filterDirectory() -> URL? {

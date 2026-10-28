@@ -21,6 +21,8 @@ final class BrowserTab: ObservableObject, Identifiable {
     @Published var lifecycle: Lifecycle
     @Published var memory: TabMemory
     @Published var colorIndex: Int
+    @Published var pinned = false
+    @Published var groupID: UUID?
     @Published var errorText: String?
     @Published var googleBlocked = false
     @Published var passwordUsernames: [String] = []
@@ -86,6 +88,7 @@ final class BrowserTab: ObservableObject, Identifiable {
 
     func wake() {
         guard webView == nil, let session, !session.isShutDown else { return }
+        ContentBlocker.shared.ensureLoaded()
         let host = url?.host
         let site = host.map { session.permissions.site(for: $0) }
         let configuration = WebKitFactory.configuration(
