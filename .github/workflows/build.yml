@@ -37,6 +37,9 @@ jobs:
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testDownloadListRoundTrip \
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testUncleanExitIsDetected \
             -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testSessionKeepsScrollAndStateFile \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testUpdateVersionCompare \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testHomebrewCaskDetection \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserTests/testReleaseChecksumMatchesFile \
             CODE_SIGN_STYLE=Manual \
             "CODE_SIGN_IDENTITY=-" \
             CODE_SIGNING_ALLOWED=YES \

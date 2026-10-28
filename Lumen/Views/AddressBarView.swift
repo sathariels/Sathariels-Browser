@@ -17,6 +17,7 @@ struct AddressBarView: View {
     @ObservedObject private var bookmarks = BookmarkStore.shared
     @ObservedObject private var settings = SettingsStore.shared
     @ObservedObject private var downloads = DownloadController.shared
+    @ObservedObject private var updates = AppUpdateCenter.shared
     @Environment(\.openSettings) private var openSettings
     @State private var prefix = ""
     @State private var ghostSuffix = ""
@@ -73,6 +74,18 @@ struct AddressBarView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Downloads")
+                if updates.showsButton {
+                    Button { updates.showSheet = true } label: {
+                        Text("Update")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(LumenTheme.activeText)
+                            .frame(width: 64, height: 28)
+                            .background(LumenTheme.omnibox)
+                            .overlay(Rectangle().strokeBorder(LumenTheme.accent, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Install the latest version")
+                }
                 moreMenu
             }
             .padding(.horizontal, 9)

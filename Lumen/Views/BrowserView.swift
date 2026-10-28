@@ -5,6 +5,7 @@ import WebKit
 struct BrowserView: View {
     @ObservedObject var session: BrowserSession
     @ObservedObject private var bookmarks = BookmarkStore.shared
+    @ObservedObject private var updates = AppUpdateCenter.shared
     @State private var sidebarOrigin: Double?
     @State private var grokOrigin: Double?
     @State private var splitOrigin: CGFloat?
@@ -60,6 +61,9 @@ struct BrowserView: View {
         .preferredColorScheme(.dark)
         .frame(minWidth: 860, minHeight: 520)
         .background(KeyWindowProbe(session: session))
+        .sheet(isPresented: $updates.showSheet) {
+            UpdateSheet(center: updates)
+        }
         .alert("Grok Bot", isPresented: Binding(
             get: { session.botNotice != nil },
             set: { if !$0 { session.botNotice = nil } }

@@ -176,6 +176,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         startUpdaterIfSigned()
+        if !ScreenshotLaunch.enabled {
+            AppUpdateCenter.shared.scheduleAutomaticCheck()
+        }
         ExtensionSupport.restoreSaved()
         ThreatList.shared.prepare()
         MemoryPressureCenter.shared.onPressure = { critical in
@@ -246,7 +249,7 @@ struct SatharielsBrowserCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") {
-                (NSApp.delegate as? AppDelegate)?.checkForUpdates()
+                AppUpdateCenter.shared.check(manual: true)
             }
         }
         CommandGroup(replacing: .newItem) {
