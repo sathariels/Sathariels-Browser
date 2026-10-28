@@ -1,0 +1,93 @@
+name: Stress
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    name: macOS stress
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          if [ -d /Applications/Xcode.app ]; then
+            sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
+
+      - name: Run stress harness
+        id: stress
+        env:
+          STRESS_REPORT: ${{ github.workspace }}/stress-report.txt
+        run: |
+          rm -f "$STRESS_REPORT"
+          set +e
+          xcodebuild test \
+            -project SatharielsBrowser.xcodeproj \
+            -scheme SatharielsBrowser \
+            -destination "platform=macOS" \
+            -derivedDataPath build/DerivedData \
+            -parallel-testing-enabled NO \
+            -only-testing:SatharielsBrowserTests/SatharielsBrowserStressTests \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=-" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            ENABLE_HARDENED_RUNTIME=NO \
+            DEVELOPMENT_TEAM=""
+          echo "xcodebuild_exit=$?" >> "$GITHUB_OUTPUT"
+          set -e
+          echo
+          echo "===== STRESS TABLE ====="
+          if [ -f "$STRESS_REPORT" ]; then
+            printf '%-10s %-16s %8s %8s %8s %s\n' scenario phase app_mb webkit total status
+            while IFS= read -r line; do
+              scenario=$(printf '%s\n' "$line" | sed -n 's/.*scenario=\([^ ]*\).*/\1/p')
+              phase=$(printf '%s\n' "$line" | sed -n 's/.*phase=\([^ ]*\).*/\1/p')
+              app=$(printf '%s\n' "$line" | sed -n 's/.*app_mb=\([^ ]*\).*/\1/p')
+              web=$(printf '%s\n' "$line" | sed -n 's/.*webkit_mb=\([^ ]*\).*/\1/p')
+              total=$(printf '%s\n' "$line" | sed -n 's/.*total_mb=\([^ ]*\).*/\1/p')
+              status=$(printf '%s\n' "$line" | sed -n 's/.*status=\([^ ]*\).*/\1/p')
+              printf '%-10s %-16s %8s %8s %8s %s\n' "$scenario" "$phase" "${app:--}" "${web:--}" "${total:--}" "$status"
+              echo "$line"
+            done < "$STRESS_REPORT"
+          else
+            echo "No stress report was written."
+            grep -R "STRESS " build/DerivedData/Logs/Test 2>/dev/null || true
+          fi
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          echo "===== CRASH REPORTS ====="
+          dir="$HOME/Library/Logs/DiagnosticReports"
+          if [ -d "$dir" ]; then
+            find "$dir" -type f \( -name '*Sathariels*' -o -name '*Browser*' \) -mmin -120 -print -exec echo '----- {} -----' \; -exec tail -n 40 {} \;
+          else
+            echo "No DiagnosticReports directory."
+          fi
+          note="$HOME/Library/Containers/com.sathariels.browser/Data/Library/Application Support/Sathariels Browser/crash-note.txt"
+          if [ -f "$note" ]; then
+            echo "===== crash-note.txt ====="
+            cat "$note"
+          fi
+
+      - name: Upload stress report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-report
+          path: stress-report.txt
+          if-no-files-found: warn
+
+      - name: Fail if the harness failed
+        if: always()
+        run: |
+          test "${{ steps.stress.outputs.xcodebuild_exit }}" = "0"
