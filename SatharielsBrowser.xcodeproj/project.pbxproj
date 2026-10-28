@@ -160,6 +160,8 @@
 		5F0379B64D93C70CF2FB4C59 /* blocker-9.json in Resources */ = {isa = PBXBuildFile; fileRef = 6C20ADF1C03895B8A00EBC2D /* blocker-9.json */; };
 		9578253E46EC019F1E048548 /* threat-hashes.bin */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Resources/threat-hashes.bin"; sourceTree = "<group>"; };
 		2F539E36B5C340815070BD34 /* threat-hashes.bin in Resources */ = {isa = PBXBuildFile; fileRef = 9578253E46EC019F1E048548 /* threat-hashes.bin */; };
+		9B1083838EF1920C818AA82D /* SatharielsBrowserStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SatharielsBrowserStressTests.swift"; sourceTree = "<group>"; };
+		336067F1B9763E03F2A24F67 /* SatharielsBrowserStressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B1083838EF1920C818AA82D /* SatharielsBrowserStressTests.swift */; };
 		472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SatharielsBrowserTests.swift"; sourceTree = "<group>"; };
 		8D8BA73A7BE3B6FF3B4FEF03 /* SatharielsBrowserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472B057791C3C31C51CFCFD2 /* SatharielsBrowserTests.swift */; };
 		B6CDB6E5D160E013280D3C68 /* Sathariels Browser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Sathariels Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -253,6 +255,7 @@
 		EEFE21A1443933CA4DE017DA /* LumenTests */ = {
 			isa = PBXGroup;
 			children = (
+				9B1083838EF1920C818AA82D,
 				472B057791C3C31C51CFCFD2
 			);
 			path = LumenTests;
@@ -394,6 +397,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				336067F1B9763E03F2A24F67,
 				8D8BA73A7BE3B6FF3B4FEF03
 			);
 			runOnlyForDeploymentPostprocessing = 0;
