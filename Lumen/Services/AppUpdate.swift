@@ -331,12 +331,12 @@ final class AppUpdateCenter: ObservableObject {
         }
         do {
             try process.run()
-            let status = await Task.detached { () -> Int32 in
+            let exitCode = await Task.detached { () -> Int32 in
                 process.waitUntilExit()
                 return process.terminationStatus
             }.value
             pipe.fileHandleForReading.readabilityHandler = nil
-            if status == 0 {
+            if exitCode == 0 {
                 relaunchInstalledApp()
             } else {
                 failed = true
