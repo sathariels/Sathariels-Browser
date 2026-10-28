@@ -29,7 +29,9 @@ WORKDIR="$(mktemp -d)"
 cleanup() { rm -rf "$WORKDIR"; }
 trap cleanup EXIT
 
-git -c "http.extraheader=AUTHORIZATION: bearer ${TOKEN}" \
+BASIC="$(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
+HEADER="AUTHORIZATION: basic ${BASIC}"
+git -c "http.https://github.com/.extraheader=${HEADER}" \
   clone --depth 1 --branch main \
   "https://github.com/${GITHUB_REPOSITORY}.git" "$WORKDIR"
 
@@ -54,5 +56,5 @@ git -C "$WORKDIR" config user.email "github-actions[bot]@users.noreply.github.co
 git -C "$WORKDIR" config user.name "github-actions[bot]"
 git -C "$WORKDIR" add Casks/sathariels-browser.rb
 git -C "$WORKDIR" commit -m "Bump Homebrew cask to ${VERSION}"
-git -C "$WORKDIR" -c "http.extraheader=AUTHORIZATION: bearer ${TOKEN}" push origin HEAD:main
+git -C "$WORKDIR" -c "http.https://github.com/.extraheader=${HEADER}" push origin HEAD:main
 echo "Pushed Homebrew cask ${VERSION} ${SHA}"
