@@ -24,7 +24,7 @@ final class SessionStore {
     func remove(index: Int) {
         windows.removeValue(forKey: index)
         guard launchComplete else { return }
-        schedule()
+        saveNow()
     }
 
     func markLaunchComplete() {
